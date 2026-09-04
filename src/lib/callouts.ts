@@ -1,3 +1,4 @@
+import { teamLabel } from './draftEngine'
 import type { Draft, DraftPick } from '../types'
 
 export interface PickCallout {
@@ -25,8 +26,12 @@ function variant<T>(pool: T[], seed: number): T {
   return pool[idx]
 }
 
-function fill(template: string, pos: string, count?: string): string {
-  return template.replaceAll('{pos}', pos).replaceAll('{count}', count ?? '')
+function fill(template: string, vars: Record<string, string>): string {
+  let out = template
+  for (const [key, value] of Object.entries(vars)) {
+    out = out.replaceAll(`{${key}}`, value)
+  }
+  return out
 }
 
 const FIRST_GENERIC = [
@@ -101,9 +106,68 @@ const MILESTONE_TEMPLATES = [
   '{count} {pos} OFF THE BOARD. THIS LEAGUE HAS COMMITMENT ISSUES',
 ]
 
+// One team, drafting nothing but a single position with every pick they've made.
+const TEAM_STACK_3 = [
+  '{team} HAS GONE {pos}-{pos}-{pos} TO START. WE SEE YOU',
+  '{team} IS THREE FOR THREE ON {pos}s',
+  '{team} IS COMMITTING HARD TO {pos} EARLY',
+]
+
+const TEAM_STACK_4 = [
+  '{team} MAKES IT FOUR STRAIGHT {pos}s. THIS IS A STRATEGY NOW',
+  '{team} HAS NOT DRAFTED ANYTHING BUT {pos} YET',
+  '{team} IS FOUR DEEP AT {pos} AND SHOWS NO SIGNS OF STOPPING',
+]
+
+const TEAM_STACK_5_RB = [
+  '{team} GOES ALL IN ON THE ROBUST RB STRATEGY — FIVE STRAIGHT',
+  '{team} HAS DRAFTED FIVE RUNNING BACKS AND NOTHING ELSE. RESPECT THE COMMITMENT',
+  "{team}'S ENTIRE ROSTER IS RUNNING BACKS. THE ZERO-RB CROWD IS SCREAMING",
+]
+
+const TEAM_STACK_5_GENERIC = [
+  '{team} HAS TAKEN {count} STRAIGHT {pos}s. ZERO REGRETS, APPARENTLY',
+  '{team} IS BUILDING A {pos} MONOPOLY',
+  "{team}'S DRAFT BOARD ONLY HAS ONE POSITION ON IT: {pos}",
+  '{count} {pos}s IN A ROW FOR {team}. COMMITMENT LEVEL: MAXIMUM',
+]
+
+const TEAM_STACK_ESCALATING = [
+  '{count} STRAIGHT {pos}s FOR {team}. THIS IS BEYOND A STRATEGY NOW',
+  '{team} HAS NOW TAKEN {count} {pos}s WITH NO SIGNS OF STOPPING',
+  '{count} {pos}s DEEP FOR {team} — SOMEONE CHECK ON THEM',
+  '{team} REFUSES TO DRAFT ANYTHING BUT {pos}. RESPECT THE STUBBORNNESS',
+]
+
+function getTeamStackCallout(draft: Draft, pick: DraftPick): PickCallout | null {
+  if (!pick.position) return null
+  const teamPicks = draft.picks
+    .filter((p) => p.slot === pick.slot && p.playerId && p.overallPick <= pick.overallPick)
+    .sort((a, b) => a.overallPick - b.overallPick)
+
+  if (teamPicks.length < 3) return null
+  if (!teamPicks.every((p) => p.position === pick.position)) return null
+
+  const count = teamPicks.length
+  const pos = pick.position
+  const team = teamLabel(draft, pick.slot)
+  const vars = { team, pos, count: ordinal(count) }
+
+  if (count === 3) return { label: fill(variant(TEAM_STACK_3, pick.overallPick), vars), tone: 'run' }
+  if (count === 4) return { label: fill(variant(TEAM_STACK_4, pick.overallPick), vars), tone: 'run' }
+  if (count === 5 && pos === 'RB') {
+    return { label: fill(variant(TEAM_STACK_5_RB, pick.overallPick), vars), tone: 'warning' }
+  }
+  if (count === 5) return { label: fill(variant(TEAM_STACK_5_GENERIC, pick.overallPick), vars), tone: 'warning' }
+  return { label: fill(variant(TEAM_STACK_ESCALATING, pick.overallPick), vars), tone: 'warning' }
+}
+
 export function getPickCallout(draft: Draft, pick: DraftPick): PickCallout | null {
   if (!pick.position) return null
   const pos = pick.position
+
+  const teamStack = getTeamStackCallout(draft, pick)
+  if (teamStack) return teamStack
 
   const filledSorted = draft.picks.filter((p) => p.playerId).sort((a, b) => a.overallPick - b.overallPick)
   const rankAtPosition = filledSorted.filter((p) => p.position === pos && p.overallPick <= pick.overallPick).length
@@ -113,21 +177,21 @@ export function getPickCallout(draft: Draft, pick: DraftPick): PickCallout | nul
   const isRun = lastThree.length === 3 && lastThree.every((p) => p.position === pos)
 
   if (isRun) {
-    return { label: fill(variant(RUN_TEMPLATES, pick.overallPick), pos), tone: 'run' }
+    return { label: fill(variant(RUN_TEMPLATES, pick.overallPick), { pos }), tone: 'run' }
   }
   if (rankAtPosition === 1) {
     const pool = FIRST_BY_POSITION[pos] ?? FIRST_GENERIC
-    return { label: fill(variant(pool, pick.overallPick), pos), tone: 'hype' }
+    return { label: fill(variant(pool, pick.overallPick), { pos }), tone: 'hype' }
   }
   if (rankAtPosition === 2) {
-    return { label: fill(variant(SECOND_TEMPLATES, pick.overallPick), pos), tone: 'hype' }
+    return { label: fill(variant(SECOND_TEMPLATES, pick.overallPick), { pos }), tone: 'hype' }
   }
   if (rankAtPosition === 3) {
-    return { label: fill(variant(THIRD_TEMPLATES, pick.overallPick), pos), tone: 'hype' }
+    return { label: fill(variant(THIRD_TEMPLATES, pick.overallPick), { pos }), tone: 'hype' }
   }
   if (rankAtPosition > 0 && rankAtPosition % 5 === 0) {
     const template = variant(MILESTONE_TEMPLATES, pick.overallPick)
-    return { label: fill(template, pos, ordinal(rankAtPosition)), tone: 'warning' }
+    return { label: fill(template, { pos, count: ordinal(rankAtPosition) }), tone: 'warning' }
   }
   return null
 }
