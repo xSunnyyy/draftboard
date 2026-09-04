@@ -1330,6 +1330,30 @@ kbd {
   grid-template-columns: 340px 1fr;
   height: 100vh;
   position: relative;
+  overflow: hidden;
+}
+.takeover__field {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgb(226 163 61 / 0.05) 0,
+    rgb(226 163 61 / 0.05) 1px,
+    transparent 1px,
+    transparent 120px
+  );
+  animation: takeover-field-drift 40s linear infinite;
+}
+@keyframes takeover-field-drift {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 1200px 0;
+  }
 }
 .takeover__controls {
   position: absolute;
@@ -1346,6 +1370,8 @@ kbd {
   opacity: 1;
 }
 .takeover__left {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--border);
@@ -1412,21 +1438,29 @@ kbd {
     transform: scale(1.04);
   }
 }
+.takeover__previous-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  width: 100%;
+}
 .takeover__previous {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.65rem;
   width: 100%;
 }
 .takeover__previous-player {
   font-weight: 600;
-  font-size: 1.05rem;
+  font-size: 0.95rem;
 }
 .takeover__previous-meta {
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: 0.78rem;
 }
 .takeover__main {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1434,8 +1468,17 @@ kbd {
   gap: 0.75rem;
   padding: 2rem;
   text-align: center;
-  position: relative;
   background: radial-gradient(ellipse 900px 600px at 50% 45%, rgb(226 163 61 / 0.1), transparent 70%);
+  animation: takeover-glow-breathe 6s ease-in-out infinite;
+}
+@keyframes takeover-glow-breathe {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.12);
+  }
 }
 .takeover__live {
   display: flex;
@@ -1447,6 +1490,15 @@ kbd {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--accent-strong);
+}
+.takeover__avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--accent);
+  box-shadow: 0 0 32px -6px rgb(226 163 61 / 0.6);
+  animation: announcement-pop 0.5s cubic-bezier(0.16, 1.4, 0.4, 1);
 }
 .takeover__team {
   font-family: var(--font-display);
@@ -1540,6 +1592,40 @@ kbd {
   color: var(--text-faint);
   font-size: 0.8rem;
   margin-top: 2rem;
+}
+
+/* Top-level crash fallback */
+.crash {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+}
+.crash__body {
+  max-width: 480px;
+  text-align: center;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+.crash__eyebrow {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.crash__title {
+  font-family: var(--font-display);
+  font-size: 2.4rem;
+  font-weight: 800;
+}
+.crash__sub {
+  color: var(--text-muted);
+  margin: 0 0 0.75rem;
 }
 
 .empty-state {

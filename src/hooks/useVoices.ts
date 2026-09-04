@@ -10,6 +10,10 @@ export function useAvailableVoices(): SpeechSynthesisVoice[] {
       setVoices(listAvailableVoices())
     }
     update()
+    // Some embedded/TV browsers expose a partial speechSynthesis that lacks
+    // full EventTarget behavior — degrade to a one-time voice list instead
+    // of crashing the whole board.
+    if (typeof window.speechSynthesis.addEventListener !== 'function') return
     window.speechSynthesis.addEventListener('voiceschanged', update)
     return () => window.speechSynthesis.removeEventListener('voiceschanged', update)
   }, [])

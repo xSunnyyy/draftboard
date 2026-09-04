@@ -67,7 +67,18 @@ export interface SleeperPlayer {
 export interface SleeperUser {
   user_id: string
   display_name: string
+  avatar: string | null
   metadata?: { team_name?: string }
+}
+
+export interface SleeperRoster {
+  roster_id: number
+  owner_id: string | null
+  settings?: {
+    wins?: number
+    losses?: number
+    ties?: number
+  }
 }
 
 export interface SleeperDraftPick {
@@ -110,4 +121,5 @@ export interface SleeperLeague {
   season: string
   total_rosters: number
   draft_id: string | null
+  previous_league_id: string | null
 }

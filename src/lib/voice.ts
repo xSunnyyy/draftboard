@@ -1,5 +1,7 @@
+import { getPickCallout } from './callouts'
 import { teamLabel } from './draftEngine'
 import { positionSpokenName } from './position'
+import { getRoastLine, type TeamHistory } from './roasts'
 import type { Draft, DraftPick } from '../types'
 
 const ENABLED_KEY = 'draftboard.voice.enabled'
@@ -92,7 +94,16 @@ function speak(text: string): void {
   window.speechSynthesis.speak(utterance)
 }
 
-export function announcePick(draft: Draft, landed: DraftPick, next: DraftPick | null): void {
+function speakable(text: string): string {
+  return text.replace(/—/g, ',').replace(/\s+/g, ' ').trim()
+}
+
+export function announcePick(
+  draft: Draft,
+  landed: DraftPick,
+  next: DraftPick | null,
+  history?: Map<number, TeamHistory>,
+): void {
   if (!getVoiceEnabled()) return
   cancelSpeech()
 
@@ -101,8 +112,14 @@ export function announcePick(draft: Draft, landed: DraftPick, next: DraftPick | 
   }.`
   speak(pickLine)
 
+  const callout = getPickCallout(draft, landed)
+  if (callout) speak(speakable(callout.label))
+
   if (next) {
-    speak(`${teamLabel(draft, next.slot)}, you are now on the clock.`)
+    let line = `${teamLabel(draft, next.slot)}, you are now on the clock.`
+    const roast = getRoastLine(teamLabel(draft, next.slot), history?.get(next.slot), next.overallPick)
+    if (roast) line += ` ${roast}`
+    speak(line)
   } else {
     speak('That is a wrap. The draft is complete.')
   }

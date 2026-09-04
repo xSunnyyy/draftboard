@@ -10,6 +10,7 @@ export interface SleeperSyncState {
   error: string | null
   pickTimerSeconds: number | null
   lastPickAt: number | null
+  draftOrder: Record<string, number> | null
 }
 
 const POLL_MS = 3000
@@ -25,6 +26,7 @@ export function useSleeperSync(
     error: null,
     pickTimerSeconds: null,
     lastPickAt: null,
+    draftOrder: null,
   })
   const onPicksUpdateRef = useRef(onPicksUpdate)
   onPicksUpdateRef.current = onPicksUpdate
@@ -71,6 +73,7 @@ export function useSleeperSync(
           error: null,
           pickTimerSeconds: sleeperDraft.settings?.pick_timer ?? null,
           lastPickAt: lastPick ? Date.now() : null,
+          draftOrder: sleeperDraft.draft_order,
         })
       } catch (e) {
         if (cancelled) return

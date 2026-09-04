@@ -3,6 +3,7 @@ import type {
   SleeperDraftPick,
   SleeperLeague,
   SleeperPlayer,
+  SleeperRoster,
   SleeperUser,
 } from '../types'
 
@@ -41,6 +42,10 @@ export function getLeagueDrafts(leagueId: string): Promise<SleeperDraft[]> {
 
 export function getLeagueUsers(leagueId: string): Promise<SleeperUser[]> {
   return getJson<SleeperUser[]>(`/league/${leagueId}/users`)
+}
+
+export function getLeagueRosters(leagueId: string): Promise<SleeperRoster[]> {
+  return getJson<SleeperRoster[]>(`/league/${leagueId}/rosters`)
 }
 
 export function getDraft(draftId: string): Promise<SleeperDraft> {

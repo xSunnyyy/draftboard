@@ -15,6 +15,7 @@ import { useSleeperSync } from '../hooks/useSleeperSync'
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
 import { useClockTick, pauseClock, resetClock, resumeClock, secondsRemaining, startClock } from '../hooks/useDraftClock'
 import { useAvailableVoices } from '../hooks/useVoices'
+import { useLeagueHistory } from '../hooks/useLeagueHistory'
 import { currentPickIndex, draftToCsv, isDraftComplete } from '../lib/draftEngine'
 import {
   announcePick,
@@ -109,6 +110,8 @@ export function BoardView({ draft, players, onUpdate, onBack }: Props) {
 
   const showWaitingScreen = isSleeper && sync.draftStatus === 'pre_draft'
 
+  const history = useLeagueHistory(isSleeper ? draft.sleeperLeagueId : null, sync.draftOrder, players)
+
   const currentIndex = currentPickIndex(draft.picks)
   const currentPick = draft.picks[currentIndex]
   const complete = isDraftComplete(draft.picks)
@@ -133,10 +136,11 @@ export function BoardView({ draft, players, onUpdate, onBack }: Props) {
       if (landed) {
         setAnnouncement(landed)
         const nextIndex = currentPickIndex(draft.picks)
-        announcePick(draft, landed, draft.picks[nextIndex] ?? null)
+        announcePick(draft, landed, draft.picks[nextIndex] ?? null, history)
       }
       prevPicksRef.current = draft.picks
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draft, draft.picks])
 
   // The Sleeper-synced clock is a client-side approximation: it resets whenever a new
@@ -281,6 +285,7 @@ export function BoardView({ draft, players, onUpdate, onBack }: Props) {
           currentIndex={currentIndex}
           remainingSeconds={remainingSeconds}
           timerSeconds={draft.settings.timerSeconds}
+          history={history}
           onExit={() => setTvMode(false)}
           voiceSupported={isVoiceSupported()}
           voiceEnabled={voiceEnabled}
