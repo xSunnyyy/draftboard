@@ -1,5 +1,6 @@
 import { SpeakerHighIcon, SpeakerXIcon, XIcon } from '@phosphor-icons/react'
 import { teamLabel } from '../lib/draftEngine'
+import type { TeamHistory } from '../lib/roasts'
 import { PlayerAvatar } from './PlayerAvatar'
 import type { Draft } from '../types'
 
@@ -8,6 +9,7 @@ interface Props {
   currentIndex: number
   remainingSeconds: number | null
   timerSeconds: number
+  history: Map<number, TeamHistory>
   onExit: () => void
   voiceSupported: boolean
   voiceEnabled: boolean
@@ -25,19 +27,27 @@ export function OnClockTakeover({
   currentIndex,
   remainingSeconds,
   timerSeconds,
+  history,
   onExit,
   voiceSupported,
   voiceEnabled,
   onToggleVoice,
 }: Props) {
   const current = draft.picks[currentIndex]
-  const previous = currentIndex > 0 ? draft.picks[currentIndex - 1] : null
+  const previousPicks = draft.picks
+    .slice(0, currentIndex)
+    .filter((p) => p.playerId)
+    .slice(-3)
+    .reverse()
   const upNext = draft.picks.slice(currentIndex + 1, currentIndex + 4)
   const pct = remainingSeconds != null && timerSeconds > 0 ? Math.max(0, Math.min(1, remainingSeconds / timerSeconds)) : 1
   const expired = remainingSeconds === 0
+  const currentAvatar = current ? history.get(current.slot)?.avatarUrl : null
 
   return (
     <div className="takeover">
+      <div className="takeover__field" aria-hidden="true" />
+
       <div className="takeover__controls">
         {voiceSupported && (
           <button
@@ -70,23 +80,29 @@ export function OnClockTakeover({
               </div>
             </div>
             <div className="takeover__quadrant takeover__quadrant--bottom">
-              <div className="takeover__quadrant-label">Previous pick</div>
-              {previous?.playerId ? (
-                <div className="takeover__previous">
-                  <PlayerAvatar
-                    key={previous.playerId}
-                    playerId={previous.playerId}
-                    position={previous.position}
-                    name={previous.playerName}
-                    size={60}
-                    thumb
-                  />
-                  <div className="takeover__previous-text">
-                    <div className="takeover__previous-player">{previous.playerName}</div>
-                    <div className="takeover__previous-meta">
-                      Pick {previous.overallPick} · {teamLabel(draft, previous.slot)}
+              <div className="takeover__quadrant-label">
+                {previousPicks.length > 1 ? 'Previous picks' : 'Previous pick'}
+              </div>
+              {previousPicks.length > 0 ? (
+                <div className="takeover__previous-list">
+                  {previousPicks.map((pick) => (
+                    <div className="takeover__previous" key={pick.overallPick}>
+                      <PlayerAvatar
+                        key={pick.playerId}
+                        playerId={pick.playerId}
+                        position={pick.position}
+                        name={pick.playerName}
+                        size={44}
+                        thumb
+                      />
+                      <div className="takeover__previous-text">
+                        <div className="takeover__previous-player">{pick.playerName}</div>
+                        <div className="takeover__previous-meta">
+                          Pick {pick.overallPick} · {teamLabel(draft, pick.slot)}
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
               ) : (
                 <div className="muted">No picks yet</div>
@@ -99,6 +115,17 @@ export function OnClockTakeover({
               <span className="onclock__live-dot" />
               On the clock
             </div>
+            {currentAvatar && (
+              <img
+                key={`avatar-${current.overallPick}`}
+                className="takeover__avatar"
+                src={currentAvatar}
+                alt=""
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none'
+                }}
+              />
+            )}
             <div key={current.overallPick} className="takeover__team">
               {teamLabel(draft, current.slot)}
             </div>

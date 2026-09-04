@@ -96,16 +96,25 @@ export function SetupView({ onCancel, onCreate }: Props) {
         }
       }
 
-      setSettings((s) => ({
-        ...s,
+      const finalSettings: DraftSettings = {
+        ...settings,
         teamCount: draft.settings.teams,
         teamNames,
         rounds: draft.settings.rounds,
-        timerSeconds: draft.settings.pick_timer || s.timerSeconds,
+        timerSeconds: draft.settings.pick_timer || settings.timerSeconds,
         season: draft.season,
-      }))
-      setResolved({ draftId, leagueId })
-      setName(leagueName || draft.metadata?.name || `Sleeper draft ${draftId}`)
+      }
+      const finalName = leagueName || draft.metadata?.name || `Sleeper draft ${draftId}`
+      const finalResolved = { draftId, leagueId }
+
+      setSettings(finalSettings)
+      setResolved(finalResolved)
+      setName(finalName)
+
+      // On a TV, typing the ID is the whole interaction — go straight to the
+      // board the moment the connection succeeds instead of requiring a
+      // second "Start draft" press.
+      await createDraft(finalName, finalSettings, finalResolved)
     } catch (e) {
       setConnectError(e instanceof Error ? e.message : 'Could not read that Sleeper draft.')
     } finally {
@@ -113,21 +122,29 @@ export function SetupView({ onCancel, onCreate }: Props) {
     }
   }
 
-  async function submit() {
+  async function createDraft(
+    finalName: string,
+    finalSettings: DraftSettings,
+    finalResolved: { draftId: string; leagueId: string | null } | null,
+  ) {
     setSubmitting(true)
     try {
-      const picks = buildEmptyPicks(settings)
+      const picks = buildEmptyPicks(finalSettings)
       await onCreate({
-        name: name.trim() || 'Untitled draft',
+        name: finalName.trim() || 'Untitled draft',
         source,
-        sleeperDraftId: source === 'sleeper' ? resolved?.draftId ?? null : null,
-        sleeperLeagueId: source === 'sleeper' ? resolved?.leagueId ?? null : null,
-        settings,
+        sleeperDraftId: source === 'sleeper' ? finalResolved?.draftId ?? null : null,
+        sleeperLeagueId: source === 'sleeper' ? finalResolved?.leagueId ?? null : null,
+        settings: finalSettings,
         picks,
       })
     } finally {
       setSubmitting(false)
     }
+  }
+
+  function submit() {
+    return createDraft(name, settings, resolved)
   }
 
   const canSubmit = source === 'manual' || resolved !== null
@@ -177,6 +194,7 @@ export function SetupView({ onCancel, onCreate }: Props) {
                 value={sleeperInput}
                 onChange={(e) => setSleeperInput(e.target.value)}
                 placeholder="e.g. 987654321012345678"
+                inputMode="numeric"
                 onKeyDown={(e) => e.key === 'Enter' && connectToSleeper()}
               />
               <button className="btn btn--primary" onClick={connectToSleeper} disabled={connecting}>
