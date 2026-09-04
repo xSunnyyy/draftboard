@@ -1,11 +1,10 @@
 import { PauseIcon, PlayIcon, ArrowClockwiseIcon } from '@phosphor-icons/react'
-import { secondsRemaining } from '../hooks/useDraftClock'
 import type { ClockState } from '../types'
 
 interface Props {
-  clock: ClockState
-  now: number
+  remainingSeconds: number | null
   timerSeconds: number
+  clockStatus: ClockState['status']
   isManual: boolean
   onStart: () => void
   onPause: () => void
@@ -19,10 +18,9 @@ function formatSeconds(total: number): string {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
-export function ClockPanel({ clock, now, timerSeconds, isManual, onStart, onPause, onResume, onReset }: Props) {
-  const remaining = secondsRemaining(clock, now)
-  const expired = remaining === 0
-  const pct = remaining != null && timerSeconds > 0 ? Math.max(0, Math.min(1, remaining / timerSeconds)) : 1
+export function ClockPanel({ remainingSeconds, timerSeconds, clockStatus, isManual, onStart, onPause, onResume, onReset }: Props) {
+  const expired = remainingSeconds === 0
+  const pct = remainingSeconds != null && timerSeconds > 0 ? Math.max(0, Math.min(1, remainingSeconds / timerSeconds)) : 1
 
   return (
     <div className="clock">
@@ -30,7 +28,7 @@ export function ClockPanel({ clock, now, timerSeconds, isManual, onStart, onPaus
         className={`clock-ring ${expired ? 'clock-ring--expired' : ''}`}
         style={{ '--pct': pct } as React.CSSProperties}
       >
-        <div className="clock-ring__inner">{remaining != null ? formatSeconds(remaining) : '—:—'}</div>
+        <div className="clock-ring__inner">{remainingSeconds != null ? formatSeconds(remainingSeconds) : '—:—'}</div>
       </div>
       <div className="clock__body">
         <div className="clock__label">Pick clock</div>
@@ -43,19 +41,19 @@ export function ClockPanel({ clock, now, timerSeconds, isManual, onStart, onPaus
         )}
         {isManual && (
           <div className="clock__controls">
-            {clock.status === 'stopped' && (
+            {clockStatus === 'stopped' && (
               <button className="btn btn--ghost" onClick={onStart}>
                 <PlayIcon size={15} weight="bold" />
                 Start
               </button>
             )}
-            {clock.status === 'running' && (
+            {clockStatus === 'running' && (
               <button className="btn btn--ghost" onClick={onPause}>
                 <PauseIcon size={15} weight="bold" />
                 Pause
               </button>
             )}
-            {clock.status === 'paused' && (
+            {clockStatus === 'paused' && (
               <button className="btn btn--ghost" onClick={onResume}>
                 <PlayIcon size={15} weight="bold" />
                 Resume

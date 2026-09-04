@@ -8,9 +8,10 @@ interface Props {
   currentIndex: number
   onEditPick: (overallPick: number) => void
   followLive: boolean
+  editable: boolean
 }
 
-export function DraftGrid({ draft, currentIndex, onEditPick, followLive }: Props) {
+export function DraftGrid({ draft, currentIndex, onEditPick, followLive, editable }: Props) {
   const currentCellRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -44,6 +45,7 @@ export function DraftGrid({ draft, currentIndex, onEditPick, followLive }: Props
           currentIndex={currentIndex}
           onEditPick={onEditPick}
           currentCellRef={currentCellRef}
+          editable={editable}
         />
       ))}
     </div>
@@ -57,6 +59,7 @@ function RowFragment({
   currentIndex,
   onEditPick,
   currentCellRef,
+  editable,
 }: {
   round: number
   teamCount: number
@@ -64,6 +67,7 @@ function RowFragment({
   currentIndex: number
   onEditPick: (overallPick: number) => void
   currentCellRef: React.MutableRefObject<HTMLDivElement | null>
+  editable: boolean
 }) {
   const rowPicks = draft.picks.filter((p) => p.round === round)
   return (
@@ -77,9 +81,9 @@ function RowFragment({
           <div
             key={pick.overallPick}
             ref={isCurrent ? currentCellRef : undefined}
-            className={`pick-cell ${isCurrent ? 'pick-cell--current' : ''} ${isPast ? 'pick-cell--filled' : ''}`}
+            className={`pick-cell ${isCurrent ? 'pick-cell--current' : ''} ${isPast && editable ? 'pick-cell--filled' : ''}`}
             style={{ '--pc': positionRgb(pick.position) } as React.CSSProperties}
-            onClick={() => isPast && onEditPick(pick.overallPick)}
+            onClick={() => isPast && editable && onEditPick(pick.overallPick)}
           >
             <div className="pick-cell__num">{pick.overallPick}</div>
             {pick.playerId ? (

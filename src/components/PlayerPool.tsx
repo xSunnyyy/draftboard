@@ -36,6 +36,7 @@ export const PlayerPool = forwardRef<HTMLInputElement, Props>(function PlayerPoo
   const clampedHighlight = Math.min(highlighted, Math.max(0, list.length - 1))
 
   function moveHighlight(delta: number) {
+    if (!canDraft) return
     setHighlighted((h) => Math.max(0, Math.min(list.length - 1, h + delta)))
   }
 
@@ -51,7 +52,7 @@ export const PlayerPool = forwardRef<HTMLInputElement, Props>(function PlayerPoo
         <input
           ref={searchRef}
           className="pool__search"
-          placeholder="Search names… (press / to focus)"
+          placeholder={canDraft ? 'Search names… (press / to focus)' : 'Search names… (reference only)'}
           value={query}
           onChange={(e) => {
             setQuery(e.target.value)
@@ -102,9 +103,9 @@ export const PlayerPool = forwardRef<HTMLInputElement, Props>(function PlayerPoo
           return (
             <li
               key={p.player_id}
-              className={`pool__row ${i === clampedHighlight ? 'pool__row--highlighted' : ''} ${drafted ? 'pool__row--drafted' : ''}`}
+              className={`pool__row ${i === clampedHighlight && canDraft ? 'pool__row--highlighted' : ''} ${drafted ? 'pool__row--drafted' : ''} ${!canDraft ? 'pool__row--readonly' : ''}`}
               onClick={() => canDraft && !drafted && onDraft(p.player_id)}
-              onMouseEnter={() => setHighlighted(i)}
+              onMouseEnter={() => canDraft && setHighlighted(i)}
             >
               <span className="pool__rank">{p.search_rank ?? '–'}</span>
               <span className="pool__name">

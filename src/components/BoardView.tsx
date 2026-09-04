@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowLeftIcon,
   ArrowUUpLeftIcon,
@@ -11,10 +11,12 @@ import {
 } from '@phosphor-icons/react'
 import { useSleeperSync } from '../hooks/useSleeperSync'
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
-import { useClockTick, pauseClock, resetClock, resumeClock, startClock } from '../hooks/useDraftClock'
+import { useClockTick, pauseClock, resetClock, resumeClock, secondsRemaining, startClock } from '../hooks/useDraftClock'
 import { currentPickIndex, draftToCsv, isDraftComplete } from '../lib/draftEngine'
 import { DraftGrid } from './DraftGrid'
 import { OnClockBanner } from './OnClockBanner'
+import { OnClockTakeover } from './OnClockTakeover'
+import { PickAnnouncement } from './PickAnnouncement'
 import { PlayerPool } from './PlayerPool'
 import { PickEditDialog } from './PickEditDialog'
 import { ShortcutsHelp } from './ShortcutsHelp'
@@ -46,6 +48,9 @@ export function BoardView({ draft, players, onUpdate, onBack }: Props) {
   const [showSummary, setShowSummary] = useState(false)
   const [editingPick, setEditingPick] = useState<number | null>(null)
   const [followLive, setFollowLive] = useState(true)
+  const [announcement, setAnnouncement] = useState<DraftPick | null>(null)
+  const [pickStartedAt, setPickStartedAt] = useState(() => Date.now())
+  const prevPicksRef = useRef(draft.picks)
   const searchRef = useRef<HTMLInputElement>(null)
   const now = useClockTick()
 
@@ -73,11 +78,43 @@ export function BoardView({ draft, players, onUpdate, onBack }: Props) {
   const currentIndex = currentPickIndex(draft.picks)
   const currentPick = draft.picks[currentIndex]
   const complete = isDraftComplete(draft.picks)
-  const editingAllowed = !complete || draft.allowEditsWhenComplete
+  const editingAllowed = !isSleeper && (!complete || draft.allowEditsWhenComplete)
   const draftedIds = useMemo(
     () => new Set(draft.picks.filter((p) => p.playerId).map((p) => p.playerId as string)),
     [draft.picks],
   )
+
+  // Announce whichever pick most recently landed, from sync or a local manual pick.
+  useEffect(() => {
+    const prev = prevPicksRef.current
+    if (prev !== draft.picks) {
+      const prevByPick = new Map(prev.map((p) => [p.overallPick, p]))
+      let landed: DraftPick | null = null
+      for (const p of draft.picks) {
+        const prevPick = prevByPick.get(p.overallPick)
+        if (prevPick && !prevPick.playerId && p.playerId) {
+          if (!landed || p.overallPick > landed.overallPick) landed = p
+        }
+      }
+      if (landed) setAnnouncement(landed)
+      prevPicksRef.current = draft.picks
+    }
+  }, [draft.picks])
+
+  // The Sleeper-synced clock is a client-side approximation: it resets whenever a new
+  // pick becomes current, rather than reading a per-pick timestamp Sleeper's public API
+  // doesn't expose.
+  useEffect(() => {
+    if (isSleeper) setPickStartedAt(Date.now())
+  }, [currentIndex, isSleeper])
+
+  const sleeperRemaining = useMemo(() => {
+    if (draft.settings.timerSeconds <= 0) return null
+    const elapsed = Math.floor((now - pickStartedAt) / 1000)
+    return Math.max(0, draft.settings.timerSeconds - elapsed)
+  }, [now, pickStartedAt, draft.settings.timerSeconds])
+
+  const remainingSeconds = isSleeper ? sleeperRemaining : secondsRemaining(draft.clock, now)
 
   function draftPlayer(playerId: string) {
     if (!currentPick || currentPick.playerId) return
@@ -165,123 +202,135 @@ export function BoardView({ draft, players, onUpdate, onBack }: Props) {
     {
       onFocusSearch: () => searchRef.current?.focus(),
       onEscape: () => {
-        if (editingPick != null) setEditingPick(null)
+        if (announcement) setAnnouncement(null)
+        else if (editingPick != null) setEditingPick(null)
         else if (showHelp) setShowHelp(false)
         else if (showSummary) setShowSummary(false)
       },
       onToggleHelp: () => setShowHelp((v) => !v),
       onToggleTv: () => setTvMode((v) => !v),
       onToggleFullscreen: toggleFullscreen,
-      onUndo: undoLastPick,
+      onUndo: () => !isSleeper && undoLastPick(),
     },
     editingPick == null,
   )
 
   return (
     <div className={`board ${tvMode ? 'board--tv' : ''}`}>
-      {!tvMode && (
-        <div className="board__toolbar">
-          <button className="btn btn--text" onClick={onBack}>
-            <ArrowLeftIcon size={17} weight="bold" />
-            Library
-          </button>
-          <StatusBar
-            draft={draft}
-            connectionStatus={isSleeper ? sync.connectionStatus : null}
-            syncError={sync.error}
-            sleeperDraftStatus={isSleeper ? sync.draftStatus : null}
-          />
-          <div className="board__toolbar-actions">
-            <button className="btn btn--text" onClick={undoLastPick} title="Undo last pick">
-              <ArrowUUpLeftIcon size={17} />
-            </button>
-            <button className="btn btn--danger-text" onClick={clearAllPicks} title="Clear all picks">
-              <TrashIcon size={17} />
-            </button>
-            <button className="btn btn--text" onClick={() => setShowSummary(true)} title="Summary">
-              <ChartBarIcon size={17} />
-            </button>
-            <button
-              className="btn btn--text"
-              title="Export CSV"
-              onClick={() => downloadCsv(`${draft.name.replace(/\s+/g, '-')}.csv`, draftToCsv(draft))}
-            >
-              <DownloadSimpleIcon size={17} />
-            </button>
-            <button className="btn btn--text" onClick={toggleFullscreen} title="Fullscreen">
-              <CornersOutIcon size={17} />
-            </button>
-            <div className="board__divider" />
-            <button className="btn btn--primary" onClick={() => setTvMode(true)}>
-              <TelevisionSimpleIcon size={17} weight="bold" />
-              TV mode
-            </button>
-            <button className="btn btn--text" onClick={() => setShowHelp(true)} title="Keyboard shortcuts">
-              <QuestionIcon size={17} />
-            </button>
-          </div>
-        </div>
-      )}
+      {announcement && <PickAnnouncement draft={draft} pick={announcement} onDone={() => setAnnouncement(null)} />}
 
-      <OnClockBanner
-        draft={draft}
-        currentIndex={currentIndex}
-        onExitTv={tvMode ? () => setTvMode(false) : undefined}
-      />
-
-      <div className="board__body">
-        <div className="board__grid-wrap">
-          {!followLive && (
-            <button className="btn btn--primary board__jump-live" onClick={() => setFollowLive(true)}>
-              Back to live pick
+      {tvMode ? (
+        <OnClockTakeover
+          draft={draft}
+          currentIndex={currentIndex}
+          remainingSeconds={remainingSeconds}
+          timerSeconds={draft.settings.timerSeconds}
+          onExit={() => setTvMode(false)}
+        />
+      ) : (
+        <>
+          <div className="board__toolbar">
+            <button className="btn btn--text" onClick={onBack}>
+              <ArrowLeftIcon size={17} weight="bold" />
+              Library
             </button>
-          )}
-          <div
-            className="board__grid-scroll"
-            onWheel={() => setFollowLive(false)}
-            onTouchMove={() => setFollowLive(false)}
-          >
-            <DraftGrid
+            <StatusBar
               draft={draft}
-              currentIndex={currentIndex}
-              onEditPick={(overallPick) => editingAllowed && setEditingPick(overallPick)}
-              followLive={followLive}
+              connectionStatus={isSleeper ? sync.connectionStatus : null}
+              syncError={sync.error}
+              sleeperDraftStatus={isSleeper ? sync.draftStatus : null}
             />
+            <div className="board__toolbar-actions">
+              {!isSleeper && (
+                <>
+                  <button className="btn btn--text" onClick={undoLastPick} title="Undo last pick">
+                    <ArrowUUpLeftIcon size={17} />
+                  </button>
+                  <button className="btn btn--danger-text" onClick={clearAllPicks} title="Clear all picks">
+                    <TrashIcon size={17} />
+                  </button>
+                </>
+              )}
+              <button className="btn btn--text" onClick={() => setShowSummary(true)} title="Summary">
+                <ChartBarIcon size={17} />
+              </button>
+              <button
+                className="btn btn--text"
+                title="Export CSV"
+                onClick={() => downloadCsv(`${draft.name.replace(/\s+/g, '-')}.csv`, draftToCsv(draft))}
+              >
+                <DownloadSimpleIcon size={17} />
+              </button>
+              <button className="btn btn--text" onClick={toggleFullscreen} title="Fullscreen">
+                <CornersOutIcon size={17} />
+              </button>
+              <div className="board__divider" />
+              <button className="btn btn--primary" onClick={() => setTvMode(true)}>
+                <TelevisionSimpleIcon size={17} weight="bold" />
+                TV mode
+              </button>
+              <button className="btn btn--text" onClick={() => setShowHelp(true)} title="Keyboard shortcuts">
+                <QuestionIcon size={17} />
+              </button>
+            </div>
           </div>
-        </div>
 
-        {!tvMode && (
-          <aside className="board__side">
-            <ClockPanel
-              clock={draft.clock}
-              now={now}
-              timerSeconds={draft.settings.timerSeconds}
-              isManual={draft.source === 'manual'}
-              onStart={() => onUpdate({ ...draft, clock: startClock(draft.settings.timerSeconds) })}
-              onPause={() => onUpdate({ ...draft, clock: pauseClock(draft.clock, now) })}
-              onResume={() => onUpdate({ ...draft, clock: resumeClock(draft.clock) })}
-              onReset={() => onUpdate({ ...draft, clock: resetClock(draft.settings.timerSeconds) })}
-            />
-            <PlayerPool
-              ref={searchRef}
-              players={players}
-              draftedIds={draftedIds}
-              onDraft={draftPlayer}
-              canDraft={editingAllowed && !!currentPick && !currentPick.playerId}
-            />
-            {complete && (
-              <label className="pool__available-toggle">
-                <input
-                  type="checkbox"
-                  checked={draft.allowEditsWhenComplete}
-                  onChange={(e) => onUpdate({ ...draft, allowEditsWhenComplete: e.target.checked })}
+          <OnClockBanner draft={draft} currentIndex={currentIndex} />
+
+          <div className="board__body">
+            <div className="board__grid-wrap">
+              {!followLive && (
+                <button className="btn btn--primary board__jump-live" onClick={() => setFollowLive(true)}>
+                  Back to live pick
+                </button>
+              )}
+              <div
+                className="board__grid-scroll"
+                onWheel={() => setFollowLive(false)}
+                onTouchMove={() => setFollowLive(false)}
+              >
+                <DraftGrid
+                  draft={draft}
+                  currentIndex={currentIndex}
+                  onEditPick={(overallPick) => editingAllowed && setEditingPick(overallPick)}
+                  followLive={followLive}
+                  editable={editingAllowed}
                 />
-                Allow edits to this completed draft
-              </label>
-            )}
-          </aside>
-        )}
-      </div>
+              </div>
+            </div>
+
+            <aside className="board__side">
+              <ClockPanel
+                remainingSeconds={remainingSeconds}
+                timerSeconds={draft.settings.timerSeconds}
+                clockStatus={draft.clock.status}
+                isManual={!isSleeper}
+                onStart={() => onUpdate({ ...draft, clock: startClock(draft.settings.timerSeconds) })}
+                onPause={() => onUpdate({ ...draft, clock: pauseClock(draft.clock, now) })}
+                onResume={() => onUpdate({ ...draft, clock: resumeClock(draft.clock) })}
+                onReset={() => onUpdate({ ...draft, clock: resetClock(draft.settings.timerSeconds) })}
+              />
+              <PlayerPool
+                ref={searchRef}
+                players={players}
+                draftedIds={draftedIds}
+                onDraft={draftPlayer}
+                canDraft={editingAllowed && !!currentPick && !currentPick.playerId}
+              />
+              {complete && !isSleeper && (
+                <label className="pool__available-toggle">
+                  <input
+                    type="checkbox"
+                    checked={draft.allowEditsWhenComplete}
+                    onChange={(e) => onUpdate({ ...draft, allowEditsWhenComplete: e.target.checked })}
+                  />
+                  Allow edits to this completed draft
+                </label>
+              )}
+            </aside>
+          </div>
+        </>
+      )}
 
       {editingPick != null && (
         <PickEditDialog
