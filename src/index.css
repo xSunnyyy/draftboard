@@ -1483,6 +1483,65 @@ kbd {
   justify-content: center;
 }
 
+/* Waiting-for-Sleeper-draft-to-start screen */
+.waiting {
+  flex: 1;
+  height: 100vh;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse 900px 600px at 50% 45%, rgb(226 163 61 / 0.1), transparent 70%);
+}
+.waiting__back {
+  position: absolute;
+  top: 1.25rem;
+  left: 1.25rem;
+  opacity: 0.6;
+}
+.waiting__back:hover {
+  opacity: 1;
+}
+.waiting__body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: center;
+  padding: 2rem;
+}
+.waiting__eyebrow {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-top: 0.75rem;
+}
+.waiting__title {
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 6vw, 4.5rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.waiting__sub {
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  margin: 0.5rem 0 0;
+}
+.waiting__meta {
+  color: var(--text-faint);
+  font-size: 0.95rem;
+  margin-top: 0.25rem;
+}
+.waiting__hint {
+  color: var(--text-faint);
+  font-size: 0.8rem;
+  margin-top: 2rem;
+}
+
 .empty-state {
   display: flex;
   flex-direction: column;

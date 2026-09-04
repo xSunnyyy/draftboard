@@ -29,6 +29,7 @@ import { DraftGrid } from './DraftGrid'
 import { OnClockBanner } from './OnClockBanner'
 import { OnClockTakeover } from './OnClockTakeover'
 import { PickAnnouncement } from './PickAnnouncement'
+import { WaitingForDraft } from './WaitingForDraft'
 import { PlayerPool } from './PlayerPool'
 import { PickEditDialog } from './PickEditDialog'
 import { ShortcutsHelp } from './ShortcutsHelp'
@@ -97,6 +98,16 @@ export function BoardView({ draft, players, onUpdate, onBack }: Props) {
     }
     applyPicks(picks, sync.draftStatus ? statusMap[sync.draftStatus] : undefined)
   })
+
+  // On a TV, there's no one at a keyboard to press "TV mode" — once Sleeper says the
+  // draft is live, take over the whole screen automatically. Only fires on the actual
+  // transition (or once, if it's already live when this screen is first opened), so a
+  // manual exit afterward sticks instead of being fought every poll.
+  useEffect(() => {
+    if (isSleeper && sync.draftStatus === 'drafting') setTvMode(true)
+  }, [isSleeper, sync.draftStatus])
+
+  const showWaitingScreen = isSleeper && sync.draftStatus === 'pre_draft'
 
   const currentIndex = currentPickIndex(draft.picks)
   const currentPick = draft.picks[currentIndex]
@@ -257,7 +268,14 @@ export function BoardView({ draft, players, onUpdate, onBack }: Props) {
     <div className={`board ${tvMode ? 'board--tv' : ''}`}>
       {announcement && <PickAnnouncement draft={draft} pick={announcement} onDone={() => setAnnouncement(null)} />}
 
-      {tvMode ? (
+      {showWaitingScreen ? (
+        <WaitingForDraft
+          draft={draft}
+          connectionStatus={sync.connectionStatus}
+          connectionError={sync.error}
+          onBack={onBack}
+        />
+      ) : tvMode ? (
         <OnClockTakeover
           draft={draft}
           currentIndex={currentIndex}
