@@ -1,4 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import {
+  ArchiveIcon,
+  ArrowCounterClockwiseIcon,
+  CopyIcon,
+  PencilSimpleIcon,
+  PlusIcon,
+  TelevisionSimpleIcon,
+  TrashIcon,
+} from '@phosphor-icons/react'
 import type { Draft } from '../types'
 
 interface Props {
@@ -34,14 +43,33 @@ export function LibraryView({
   const [showArchived, setShowArchived] = useState(false)
   const [renamingId, setRenamingId] = useState<string | null>(null)
   const [renameValue, setRenameValue] = useState('')
+  const [notice, setNotice] = useState<string | null>(null)
 
   const visible = drafts.filter((d) => d.archived === showArchived)
+  const activeCount = drafts.filter((d) => !d.archived).length
+
+  useEffect(() => {
+    if (!notice) return
+    const id = setTimeout(() => setNotice(null), 6000)
+    return () => clearTimeout(id)
+  }, [notice])
+
+  function subtitle(): string {
+    if (loading) return 'Loading your saved drafts…'
+    if (showArchived) return visible.length === 0 ? 'Nothing archived.' : `${visible.length} archived draft${visible.length === 1 ? '' : 's'}.`
+    if (activeCount === 0) return 'Your draft library is empty. Connect a Sleeper draft or start a manual mock.'
+    return `${activeCount} draft${activeCount === 1 ? '' : 's'} in your library.`
+  }
 
   return (
     <div className="library">
       <header className="library__header">
-        <h1>Draft Library</h1>
-        <button className="btn btn--primary" onClick={onNew}>
+        <div>
+          <h1 className="shell-title">Draft Night</h1>
+          <p className="shell-subtitle">{subtitle()}</p>
+        </div>
+        <button className="btn btn--primary btn--large" onClick={onNew}>
+          <PlusIcon weight="bold" size={18} />
           New draft
         </button>
       </header>
@@ -60,19 +88,39 @@ export function LibraryView({
           Archived
         </button>
         {showArchived && visible.length > 0 && (
-          <button className="btn btn--ghost btn--danger" onClick={onDeleteAllArchived}>
+          <button
+            className="btn btn--danger-text"
+            onClick={() => {
+              onDeleteAllArchived()
+              setNotice('Archived drafts deleted.')
+            }}
+            style={{ marginLeft: 'auto' }}
+          >
+            <TrashIcon weight="bold" size={16} />
             Delete all archived
           </button>
         )}
       </div>
 
-      {loading && <p className="muted">Loading drafts…</p>}
+      {notice && (
+        <div className="notice">
+          <span>{notice}</span>
+          <button className="btn btn--text notice__dismiss" onClick={() => setNotice(null)}>
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {!loading && visible.length === 0 && (
-        <p className="muted">
-          {showArchived ? 'No archived drafts.' : 'No drafts yet. Create one to get started.'}
-        </p>
+        <div className="empty-state">
+          <TelevisionSimpleIcon className="empty-state__icon" size={36} weight="thin" />
+          <p className="muted">
+            {showArchived ? 'No archived drafts.' : 'No drafts yet. Press New draft to connect Sleeper or start a manual mock.'}
+          </p>
+        </div>
       )}
+
+      {loading && <p className="muted">Loading drafts…</p>}
 
       <ul className="draft-list">
         {visible.map((draft) => (
@@ -98,10 +146,10 @@ export function LibraryView({
                 <div className="draft-card__title">{draft.name}</div>
               )}
               <div className="draft-card__meta">
-                <span className={`badge badge--${draft.source}`}>
+                <span className={`tag tag--${draft.source}`}>
                   {draft.source === 'sleeper' ? 'Sleeper synced' : 'Manual'}
                 </span>
-                <span className="badge">{statusLabel(draft)}</span>
+                <span className="tag">{statusLabel(draft)}</span>
                 <span className="muted">
                   {draft.settings.teamCount} teams · {draft.settings.rounds} rounds
                 </span>
@@ -109,32 +157,55 @@ export function LibraryView({
             </div>
             <div className="draft-card__actions">
               <button
-                className="btn btn--ghost"
+                className="btn btn--text"
+                title="Rename"
                 onClick={() => {
                   setRenamingId(draft.id)
                   setRenameValue(draft.name)
                 }}
               >
-                Rename
-              </button>
-              <button className="btn btn--ghost" onClick={() => onDuplicate(draft.id)}>
-                Duplicate
-              </button>
-              <button className="btn btn--ghost" onClick={() => onArchive(draft.id, !draft.archived)}>
-                {draft.archived ? 'Unarchive' : 'Archive'}
+                <PencilSimpleIcon size={17} />
               </button>
               <button
-                className="btn btn--ghost btn--danger"
+                className="btn btn--text"
+                title="Duplicate"
                 onClick={() => {
-                  if (confirm(`Delete "${draft.name}" permanently?`)) onDelete(draft.id)
+                  onDuplicate(draft.id)
+                  setNotice(`"${draft.name}" duplicated.`)
                 }}
               >
-                Delete
+                <CopyIcon size={17} />
+              </button>
+              <button
+                className="btn btn--text"
+                title={draft.archived ? 'Unarchive' : 'Archive'}
+                onClick={() => {
+                  onArchive(draft.id, !draft.archived)
+                  setNotice(draft.archived ? `"${draft.name}" restored to active.` : `"${draft.name}" archived.`)
+                }}
+              >
+                {draft.archived ? <ArrowCounterClockwiseIcon size={17} /> : <ArchiveIcon size={17} />}
+              </button>
+              <button
+                className="btn btn--danger-text"
+                title="Delete"
+                onClick={() => {
+                  if (confirm(`Delete "${draft.name}" permanently?`)) {
+                    onDelete(draft.id)
+                    setNotice('Draft deleted from this browser.')
+                  }
+                }}
+              >
+                <TrashIcon size={17} />
               </button>
             </div>
           </li>
         ))}
       </ul>
+
+      <footer className="library__footer">
+        Drafts are saved in this browser only. Clearing your site data will remove them.
+      </footer>
     </div>
   )
 }

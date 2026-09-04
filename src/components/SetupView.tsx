@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ArrowLeftIcon, BroadcastIcon, PlugsConnectedIcon, UsersThreeIcon } from '@phosphor-icons/react'
 import * as sleeper from '../lib/sleeper'
 import { buildEmptyPicks } from '../lib/draftEngine'
 import type { Draft, DraftSettings, DraftSource, DraftType, ScoringFormat } from '../types'
@@ -134,29 +135,41 @@ export function SetupView({ onCancel, onCreate }: Props) {
   return (
     <div className="setup">
       <header className="setup__header">
-        <button className="btn btn--ghost" onClick={onCancel}>
-          ← Back to library
+        <button className="btn btn--text" onClick={onCancel}>
+          <ArrowLeftIcon size={18} weight="bold" />
+          Library
         </button>
-        <h1>New draft</h1>
+        <h1 className="shell-title" style={{ fontSize: '2rem' }}>
+          New draft
+        </h1>
       </header>
 
       <div className="setup__source">
         <button
-          className={`tab ${source === 'sleeper' ? 'tab--active' : ''}`}
+          className={`source-card ${source === 'sleeper' ? 'source-card--active' : ''}`}
           onClick={() => setSource('sleeper')}
         >
-          Sync with Sleeper
+          <PlugsConnectedIcon className="source-card__icon" size={26} weight="duotone" />
+          <div>
+            <div className="source-card__title">Sync with Sleeper</div>
+            <div className="source-card__desc">Live picks, polled every few seconds</div>
+          </div>
         </button>
         <button
-          className={`tab ${source === 'manual' ? 'tab--active' : ''}`}
+          className={`source-card ${source === 'manual' ? 'source-card--active' : ''}`}
           onClick={() => setSource('manual')}
         >
-          Manual mock draft
+          <UsersThreeIcon className="source-card__icon" size={26} weight="duotone" />
+          <div>
+            <div className="source-card__title">Manual mock draft</div>
+            <div className="source-card__desc">Run it entirely offline, by hand</div>
+          </div>
         </button>
       </div>
 
       {source === 'sleeper' && (
         <section className="setup__section">
+          <div className="setup__section-title">Connect</div>
           <label className="field">
             <span>Sleeper league ID or draft ID</span>
             <div className="field__row">
@@ -167,6 +180,7 @@ export function SetupView({ onCancel, onCreate }: Props) {
                 onKeyDown={(e) => e.key === 'Enter' && connectToSleeper()}
               />
               <button className="btn btn--primary" onClick={connectToSleeper} disabled={connecting}>
+                <BroadcastIcon size={17} weight="bold" />
                 {connecting ? 'Contacting Sleeper…' : 'Connect'}
               </button>
             </div>
@@ -177,6 +191,7 @@ export function SetupView({ onCancel, onCreate }: Props) {
       )}
 
       <section className="setup__section">
+        <div className="setup__section-title">Details</div>
         <label className="field">
           <span>Draft name</span>
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Untitled draft" />
@@ -241,7 +256,7 @@ export function SetupView({ onCancel, onCreate }: Props) {
           </label>
         </div>
 
-        <div className="field">
+        <div className="field" style={{ marginTop: '1.1rem' }}>
           <span>Team names</span>
           <div className="team-name-grid">
             {settings.teamNames.map((teamName, i) => (
@@ -263,7 +278,7 @@ export function SetupView({ onCancel, onCreate }: Props) {
 
       <footer className="setup__footer">
         <button className="btn btn--primary btn--large" onClick={submit} disabled={!canSubmit || submitting}>
-          {submitting ? 'Starting…' : 'Start draft'}
+          {submitting ? 'Starting…' : 'Start draft →'}
         </button>
       </footer>
     </div>

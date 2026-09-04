@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { teamLabel } from '../lib/draftEngine'
+import { positionRgb } from '../lib/position'
 import type { Draft } from '../types'
 
 interface Props {
@@ -7,9 +8,10 @@ interface Props {
   currentIndex: number
   onEditPick: (overallPick: number) => void
   followLive: boolean
+  editable: boolean
 }
 
-export function DraftGrid({ draft, currentIndex, onEditPick, followLive }: Props) {
+export function DraftGrid({ draft, currentIndex, onEditPick, followLive, editable }: Props) {
   const currentCellRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -43,6 +45,7 @@ export function DraftGrid({ draft, currentIndex, onEditPick, followLive }: Props
           currentIndex={currentIndex}
           onEditPick={onEditPick}
           currentCellRef={currentCellRef}
+          editable={editable}
         />
       ))}
     </div>
@@ -56,6 +59,7 @@ function RowFragment({
   currentIndex,
   onEditPick,
   currentCellRef,
+  editable,
 }: {
   round: number
   teamCount: number
@@ -63,6 +67,7 @@ function RowFragment({
   currentIndex: number
   onEditPick: (overallPick: number) => void
   currentCellRef: React.MutableRefObject<HTMLDivElement | null>
+  editable: boolean
 }) {
   const rowPicks = draft.picks.filter((p) => p.round === round)
   return (
@@ -76,15 +81,17 @@ function RowFragment({
           <div
             key={pick.overallPick}
             ref={isCurrent ? currentCellRef : undefined}
-            className={`pick-cell ${isCurrent ? 'pick-cell--current' : ''} ${isPast ? 'pick-cell--filled' : ''}`}
-            onClick={() => isPast && onEditPick(pick.overallPick)}
+            className={`pick-cell ${isCurrent ? 'pick-cell--current' : ''} ${isPast && editable ? 'pick-cell--filled' : ''}`}
+            style={{ '--pc': positionRgb(pick.position) } as React.CSSProperties}
+            onClick={() => isPast && editable && onEditPick(pick.overallPick)}
           >
             <div className="pick-cell__num">{pick.overallPick}</div>
             {pick.playerId ? (
               <>
                 <div className="pick-cell__player">{pick.playerName}</div>
                 <div className="pick-cell__meta">
-                  {pick.position || ''} {pick.nflTeam ? `· ${pick.nflTeam}` : ''}
+                  {pick.position && <span className="position-chip">{pick.position}</span>}
+                  {pick.nflTeam ?? ''}
                 </div>
               </>
             ) : isCurrent ? (

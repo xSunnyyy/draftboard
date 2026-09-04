@@ -1,4 +1,6 @@
 import { forwardRef, useMemo, useState } from 'react'
+import { MagnifyingGlassIcon } from '@phosphor-icons/react'
+import { positionRgb } from '../lib/position'
 import type { SleeperPlayer } from '../types'
 
 const POSITIONS = ['ALL', 'QB', 'RB', 'WR', 'TE', 'K', 'DEF']
@@ -34,6 +36,7 @@ export const PlayerPool = forwardRef<HTMLInputElement, Props>(function PlayerPoo
   const clampedHighlight = Math.min(highlighted, Math.max(0, list.length - 1))
 
   function moveHighlight(delta: number) {
+    if (!canDraft) return
     setHighlighted((h) => Math.max(0, Math.min(list.length - 1, h + delta)))
   }
 
@@ -45,10 +48,11 @@ export const PlayerPool = forwardRef<HTMLInputElement, Props>(function PlayerPoo
   return (
     <div className="pool">
       <div className="pool__search-row">
+        <MagnifyingGlassIcon className="pool__search-icon" size={16} />
         <input
           ref={searchRef}
           className="pool__search"
-          placeholder="Search names… (press / to focus)"
+          placeholder={canDraft ? 'Search names… (press / to focus)' : 'Search names… (reference only)'}
           value={query}
           onChange={(e) => {
             setQuery(e.target.value)
@@ -99,15 +103,17 @@ export const PlayerPool = forwardRef<HTMLInputElement, Props>(function PlayerPoo
           return (
             <li
               key={p.player_id}
-              className={`pool__row ${i === clampedHighlight ? 'pool__row--highlighted' : ''} ${drafted ? 'pool__row--drafted' : ''}`}
+              className={`pool__row ${i === clampedHighlight && canDraft ? 'pool__row--highlighted' : ''} ${drafted ? 'pool__row--drafted' : ''} ${!canDraft ? 'pool__row--readonly' : ''}`}
               onClick={() => canDraft && !drafted && onDraft(p.player_id)}
-              onMouseEnter={() => setHighlighted(i)}
+              onMouseEnter={() => canDraft && setHighlighted(i)}
             >
               <span className="pool__rank">{p.search_rank ?? '–'}</span>
               <span className="pool__name">
                 {p.first_name} {p.last_name}
               </span>
-              <span className="pool__pos">{p.position}</span>
+              <span className="position-chip" style={{ '--pc': positionRgb(p.position) } as React.CSSProperties}>
+                {p.position}
+              </span>
               <span className="pool__team">{p.team ?? 'FA'}</span>
             </li>
           )

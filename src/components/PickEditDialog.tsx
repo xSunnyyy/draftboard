@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
+import { TrashIcon } from '@phosphor-icons/react'
 import { teamLabel } from '../lib/draftEngine'
+import { positionRgb } from '../lib/position'
 import type { Draft, SleeperPlayer } from '../types'
 
 interface Props {
@@ -36,7 +38,10 @@ export function PickEditDialog({ draft, overallPick, players, onClose, onReplace
 
         {pick.playerId && (
           <div className="modal__current">
-            Currently: <strong>{pick.playerName}</strong> ({pick.position})
+            Currently: <strong>{pick.playerName}</strong>{' '}
+            <span className="position-chip" style={{ '--pc': positionRgb(pick.position) } as React.CSSProperties}>
+              {pick.position}
+            </span>
           </div>
         )}
 
@@ -68,12 +73,13 @@ export function PickEditDialog({ draft, overallPick, players, onClose, onReplace
 
         <div className="modal__actions">
           <button
-            className="btn btn--ghost btn--danger"
+            className="btn btn--danger"
             onClick={() => {
               onClear()
               onClose()
             }}
           >
+            <TrashIcon size={16} />
             Clear pick
           </button>
           <button className="btn btn--ghost" onClick={onClose}>
