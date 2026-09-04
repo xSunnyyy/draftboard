@@ -14,8 +14,17 @@ import {
 import { useSleeperSync } from '../hooks/useSleeperSync'
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
 import { useClockTick, pauseClock, resetClock, resumeClock, secondsRemaining, startClock } from '../hooks/useDraftClock'
+import { useAvailableVoices } from '../hooks/useVoices'
 import { currentPickIndex, draftToCsv, isDraftComplete } from '../lib/draftEngine'
-import { announcePick, cancelSpeech, getVoiceEnabled, isVoiceSupported, setVoiceEnabled } from '../lib/voice'
+import {
+  announcePick,
+  cancelSpeech,
+  getPreferredVoice,
+  getVoiceEnabled,
+  isVoiceSupported,
+  setPreferredVoiceUri,
+  setVoiceEnabled,
+} from '../lib/voice'
 import { DraftGrid } from './DraftGrid'
 import { OnClockBanner } from './OnClockBanner'
 import { OnClockTakeover } from './OnClockTakeover'
@@ -54,11 +63,19 @@ export function BoardView({ draft, players, onUpdate, onBack }: Props) {
   const [announcement, setAnnouncement] = useState<DraftPick | null>(null)
   const [pickStartedAt, setPickStartedAt] = useState(() => Date.now())
   const [voiceEnabled, setVoiceEnabledState] = useState(() => getVoiceEnabled())
+  const [voiceUri, setVoiceUri] = useState('')
+  const availableVoices = useAvailableVoices()
   const prevPicksRef = useRef(draft.picks)
   const searchRef = useRef<HTMLInputElement>(null)
   const now = useClockTick()
 
   useEffect(() => cancelSpeech, [])
+
+  useEffect(() => {
+    if (availableVoices.length === 0) return
+    const current = getPreferredVoice()
+    if (current) setVoiceUri(current.voiceURI)
+  }, [availableVoices])
 
   const isSleeper = draft.source === 'sleeper'
 
@@ -206,6 +223,11 @@ export function BoardView({ draft, players, onUpdate, onBack }: Props) {
     setVoiceEnabledState(next)
   }
 
+  function changeVoice(uri: string) {
+    setPreferredVoiceUri(uri)
+    setVoiceUri(uri)
+  }
+
   function toggleFullscreen() {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(() => {})
@@ -291,6 +313,20 @@ export function BoardView({ draft, players, onUpdate, onBack }: Props) {
                 >
                   {voiceEnabled ? <SpeakerHighIcon size={17} /> : <SpeakerXIcon size={17} />}
                 </button>
+              )}
+              {isVoiceSupported() && voiceEnabled && availableVoices.length > 0 && (
+                <select
+                  className="voice-select"
+                  value={voiceUri}
+                  onChange={(e) => changeVoice(e.target.value)}
+                  title="Voice"
+                >
+                  {availableVoices.map((v) => (
+                    <option key={v.voiceURI} value={v.voiceURI}>
+                      {v.name}
+                    </option>
+                  ))}
+                </select>
               )}
               <div className="board__divider" />
               <button className="btn btn--primary" onClick={() => setTvMode(true)}>

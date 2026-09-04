@@ -2,7 +2,8 @@ import { teamLabel } from './draftEngine'
 import { positionSpokenName } from './position'
 import type { Draft, DraftPick } from '../types'
 
-const STORAGE_KEY = 'draftboard.voice.enabled'
+const ENABLED_KEY = 'draftboard.voice.enabled'
+const VOICE_URI_KEY = 'draftboard.voice.uri'
 
 export function isVoiceSupported(): boolean {
   return typeof window !== 'undefined' && 'speechSynthesis' in window
@@ -11,7 +12,7 @@ export function isVoiceSupported(): boolean {
 export function getVoiceEnabled(): boolean {
   if (!isVoiceSupported()) return false
   try {
-    return localStorage.getItem(STORAGE_KEY) !== 'false'
+    return localStorage.getItem(ENABLED_KEY) !== 'false'
   } catch {
     return true
   }
@@ -19,7 +20,7 @@ export function getVoiceEnabled(): boolean {
 
 export function setVoiceEnabled(enabled: boolean): void {
   try {
-    localStorage.setItem(STORAGE_KEY, String(enabled))
+    localStorage.setItem(ENABLED_KEY, String(enabled))
   } catch {
     // storage unavailable; the in-memory toggle still works for this session
   }
@@ -31,11 +32,63 @@ export function cancelSpeech(): void {
   window.speechSynthesis.cancel()
 }
 
+export function listAvailableVoices(): SpeechSynthesisVoice[] {
+  if (!isVoiceSupported()) return []
+  return window.speechSynthesis
+    .getVoices()
+    .filter((v) => v.lang.toLowerCase().startsWith('en'))
+}
+
+// Browsers vary wildly in built-in voice quality. Edge and Chrome on most
+// platforms expose cloud-backed "Natural"/"Neural"/"Online" voices alongside
+// the classic robotic local ones — prefer those when no explicit choice has
+// been made.
+function voiceQualityScore(v: SpeechSynthesisVoice): number {
+  const name = v.name.toLowerCase()
+  let score = 0
+  if (name.includes('natural')) score += 6
+  if (name.includes('neural')) score += 6
+  if (name.includes('online')) score += 3
+  if (name.includes('premium') || name.includes('enhanced')) score += 3
+  if (!v.localService) score += 2
+  if (v.default) score += 1
+  return score
+}
+
+export function getPreferredVoiceUri(): string | null {
+  try {
+    return localStorage.getItem(VOICE_URI_KEY)
+  } catch {
+    return null
+  }
+}
+
+export function setPreferredVoiceUri(uri: string): void {
+  try {
+    localStorage.setItem(VOICE_URI_KEY, uri)
+  } catch {
+    // storage unavailable; selection just won't persist across reloads
+  }
+}
+
+export function getPreferredVoice(): SpeechSynthesisVoice | null {
+  const voices = listAvailableVoices()
+  if (voices.length === 0) return null
+  const storedUri = getPreferredVoiceUri()
+  if (storedUri) {
+    const found = voices.find((v) => v.voiceURI === storedUri)
+    if (found) return found
+  }
+  return [...voices].sort((a, b) => voiceQualityScore(b) - voiceQualityScore(a))[0] ?? null
+}
+
 function speak(text: string): void {
   if (!isVoiceSupported()) return
   const utterance = new SpeechSynthesisUtterance(text)
-  utterance.rate = 1.03
+  utterance.rate = 0.96
   utterance.pitch = 1
+  const voice = getPreferredVoice()
+  if (voice) utterance.voice = voice
   window.speechSynthesis.speak(utterance)
 }
 

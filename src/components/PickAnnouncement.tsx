@@ -11,7 +11,7 @@ interface Props {
   onDone: () => void
 }
 
-const DISPLAY_MS = 4000
+const DISPLAY_MS = 6000
 
 export function PickAnnouncement({ draft, pick, onDone }: Props) {
   useEffect(() => {
