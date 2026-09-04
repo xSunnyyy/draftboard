@@ -13,3 +13,17 @@ export function positionRgb(position: string | null | undefined): string {
   if (!position) return FALLBACK_RGB
   return POSITION_RGB[position] ?? FALLBACK_RGB
 }
+
+const POSITION_SPOKEN: Record<string, string> = {
+  QB: 'quarterback',
+  RB: 'running back',
+  WR: 'wide receiver',
+  TE: 'tight end',
+  K: 'kicker',
+  DEF: 'defense',
+}
+
+export function positionSpokenName(position: string | null | undefined): string {
+  if (!position) return ''
+  return POSITION_SPOKEN[position] ?? position
+}

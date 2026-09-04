@@ -1321,11 +1321,15 @@ kbd {
   height: 100vh;
   position: relative;
 }
-.takeover__exit {
+.takeover__controls {
   position: absolute;
   top: 1.25rem;
   right: 1.25rem;
   z-index: 5;
+  display: flex;
+  gap: 0.4rem;
+}
+.takeover__exit {
   opacity: 0.5;
 }
 .takeover__exit:hover {

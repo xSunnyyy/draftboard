@@ -6,6 +6,8 @@ import {
   CornersOutIcon,
   DownloadSimpleIcon,
   QuestionIcon,
+  SpeakerHighIcon,
+  SpeakerXIcon,
   TelevisionSimpleIcon,
   TrashIcon,
 } from '@phosphor-icons/react'
@@ -13,6 +15,7 @@ import { useSleeperSync } from '../hooks/useSleeperSync'
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
 import { useClockTick, pauseClock, resetClock, resumeClock, secondsRemaining, startClock } from '../hooks/useDraftClock'
 import { currentPickIndex, draftToCsv, isDraftComplete } from '../lib/draftEngine'
+import { announcePick, cancelSpeech, getVoiceEnabled, isVoiceSupported, setVoiceEnabled } from '../lib/voice'
 import { DraftGrid } from './DraftGrid'
 import { OnClockBanner } from './OnClockBanner'
 import { OnClockTakeover } from './OnClockTakeover'
@@ -50,9 +53,12 @@ export function BoardView({ draft, players, onUpdate, onBack }: Props) {
   const [followLive, setFollowLive] = useState(true)
   const [announcement, setAnnouncement] = useState<DraftPick | null>(null)
   const [pickStartedAt, setPickStartedAt] = useState(() => Date.now())
+  const [voiceEnabled, setVoiceEnabledState] = useState(() => getVoiceEnabled())
   const prevPicksRef = useRef(draft.picks)
   const searchRef = useRef<HTMLInputElement>(null)
   const now = useClockTick()
+
+  useEffect(() => cancelSpeech, [])
 
   const isSleeper = draft.source === 'sleeper'
 
@@ -96,10 +102,14 @@ export function BoardView({ draft, players, onUpdate, onBack }: Props) {
           if (!landed || p.overallPick > landed.overallPick) landed = p
         }
       }
-      if (landed) setAnnouncement(landed)
+      if (landed) {
+        setAnnouncement(landed)
+        const nextIndex = currentPickIndex(draft.picks)
+        announcePick(draft, landed, draft.picks[nextIndex] ?? null)
+      }
       prevPicksRef.current = draft.picks
     }
-  }, [draft.picks])
+  }, [draft, draft.picks])
 
   // The Sleeper-synced clock is a client-side approximation: it resets whenever a new
   // pick becomes current, rather than reading a per-pick timestamp Sleeper's public API
@@ -190,6 +200,12 @@ export function BoardView({ draft, players, onUpdate, onBack }: Props) {
     applyPicks(picks)
   }
 
+  function toggleVoice() {
+    const next = !voiceEnabled
+    setVoiceEnabled(next)
+    setVoiceEnabledState(next)
+  }
+
   function toggleFullscreen() {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(() => {})
@@ -226,6 +242,9 @@ export function BoardView({ draft, players, onUpdate, onBack }: Props) {
           remainingSeconds={remainingSeconds}
           timerSeconds={draft.settings.timerSeconds}
           onExit={() => setTvMode(false)}
+          voiceSupported={isVoiceSupported()}
+          voiceEnabled={voiceEnabled}
+          onToggleVoice={toggleVoice}
         />
       ) : (
         <>
@@ -264,6 +283,15 @@ export function BoardView({ draft, players, onUpdate, onBack }: Props) {
               <button className="btn btn--text" onClick={toggleFullscreen} title="Fullscreen">
                 <CornersOutIcon size={17} />
               </button>
+              {isVoiceSupported() && (
+                <button
+                  className="btn btn--text"
+                  onClick={toggleVoice}
+                  title={voiceEnabled ? 'Mute voice announcements' : 'Enable voice announcements'}
+                >
+                  {voiceEnabled ? <SpeakerHighIcon size={17} /> : <SpeakerXIcon size={17} />}
+                </button>
+              )}
               <div className="board__divider" />
               <button className="btn btn--primary" onClick={() => setTvMode(true)}>
                 <TelevisionSimpleIcon size={17} weight="bold" />

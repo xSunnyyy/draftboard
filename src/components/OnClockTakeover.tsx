@@ -1,4 +1,4 @@
-import { XIcon } from '@phosphor-icons/react'
+import { SpeakerHighIcon, SpeakerXIcon, XIcon } from '@phosphor-icons/react'
 import { teamLabel } from '../lib/draftEngine'
 import { PlayerAvatar } from './PlayerAvatar'
 import type { Draft } from '../types'
@@ -9,6 +9,9 @@ interface Props {
   remainingSeconds: number | null
   timerSeconds: number
   onExit: () => void
+  voiceSupported: boolean
+  voiceEnabled: boolean
+  onToggleVoice: () => void
 }
 
 function formatSeconds(total: number): string {
@@ -17,7 +20,16 @@ function formatSeconds(total: number): string {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
-export function OnClockTakeover({ draft, currentIndex, remainingSeconds, timerSeconds, onExit }: Props) {
+export function OnClockTakeover({
+  draft,
+  currentIndex,
+  remainingSeconds,
+  timerSeconds,
+  onExit,
+  voiceSupported,
+  voiceEnabled,
+  onToggleVoice,
+}: Props) {
   const current = draft.picks[currentIndex]
   const previous = currentIndex > 0 ? draft.picks[currentIndex - 1] : null
   const upNext = draft.picks.slice(currentIndex + 1, currentIndex + 4)
@@ -26,9 +38,20 @@ export function OnClockTakeover({ draft, currentIndex, remainingSeconds, timerSe
 
   return (
     <div className="takeover">
-      <button className="btn btn--ghost btn--icon takeover__exit" onClick={onExit} title="Exit TV mode">
-        <XIcon size={18} weight="bold" />
-      </button>
+      <div className="takeover__controls">
+        {voiceSupported && (
+          <button
+            className="btn btn--ghost btn--icon takeover__exit"
+            onClick={onToggleVoice}
+            title={voiceEnabled ? 'Mute voice announcements' : 'Enable voice announcements'}
+          >
+            {voiceEnabled ? <SpeakerHighIcon size={18} /> : <SpeakerXIcon size={18} />}
+          </button>
+        )}
+        <button className="btn btn--ghost btn--icon takeover__exit" onClick={onExit} title="Exit TV mode">
+          <XIcon size={18} weight="bold" />
+        </button>
+      </div>
 
       {!current ? (
         <div className="takeover__main">
