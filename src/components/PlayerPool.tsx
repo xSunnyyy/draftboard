@@ -1,4 +1,6 @@
 import { forwardRef, useMemo, useState } from 'react'
+import { MagnifyingGlassIcon } from '@phosphor-icons/react'
+import { positionRgb } from '../lib/position'
 import type { SleeperPlayer } from '../types'
 
 const POSITIONS = ['ALL', 'QB', 'RB', 'WR', 'TE', 'K', 'DEF']
@@ -45,6 +47,7 @@ export const PlayerPool = forwardRef<HTMLInputElement, Props>(function PlayerPoo
   return (
     <div className="pool">
       <div className="pool__search-row">
+        <MagnifyingGlassIcon className="pool__search-icon" size={16} />
         <input
           ref={searchRef}
           className="pool__search"
@@ -107,7 +110,9 @@ export const PlayerPool = forwardRef<HTMLInputElement, Props>(function PlayerPoo
               <span className="pool__name">
                 {p.first_name} {p.last_name}
               </span>
-              <span className="pool__pos">{p.position}</span>
+              <span className="position-chip" style={{ '--pc': positionRgb(p.position) } as React.CSSProperties}>
+                {p.position}
+              </span>
               <span className="pool__team">{p.team ?? 'FA'}</span>
             </li>
           )

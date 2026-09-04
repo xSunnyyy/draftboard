@@ -1,9 +1,20 @@
 import { useMemo, useRef, useState } from 'react'
+import {
+  ArrowLeftIcon,
+  ArrowUUpLeftIcon,
+  ChartBarIcon,
+  CornersOutIcon,
+  DownloadSimpleIcon,
+  QuestionIcon,
+  TelevisionSimpleIcon,
+  TrashIcon,
+} from '@phosphor-icons/react'
 import { useSleeperSync } from '../hooks/useSleeperSync'
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
 import { useClockTick, pauseClock, resetClock, resumeClock, startClock } from '../hooks/useDraftClock'
 import { currentPickIndex, draftToCsv, isDraftComplete } from '../lib/draftEngine'
 import { DraftGrid } from './DraftGrid'
+import { OnClockBanner } from './OnClockBanner'
 import { PlayerPool } from './PlayerPool'
 import { PickEditDialog } from './PickEditDialog'
 import { ShortcutsHelp } from './ShortcutsHelp'
@@ -170,8 +181,9 @@ export function BoardView({ draft, players, onUpdate, onBack }: Props) {
     <div className={`board ${tvMode ? 'board--tv' : ''}`}>
       {!tvMode && (
         <div className="board__toolbar">
-          <button className="btn btn--ghost" onClick={onBack}>
-            ← Library
+          <button className="btn btn--text" onClick={onBack}>
+            <ArrowLeftIcon size={17} weight="bold" />
+            Library
           </button>
           <StatusBar
             draft={draft}
@@ -180,47 +192,42 @@ export function BoardView({ draft, players, onUpdate, onBack }: Props) {
             sleeperDraftStatus={isSleeper ? sync.draftStatus : null}
           />
           <div className="board__toolbar-actions">
-            <button className="btn btn--ghost" onClick={undoLastPick}>
-              Undo last pick
+            <button className="btn btn--text" onClick={undoLastPick} title="Undo last pick">
+              <ArrowUUpLeftIcon size={17} />
             </button>
-            <button className="btn btn--ghost btn--danger" onClick={clearAllPicks}>
-              Clear all picks
+            <button className="btn btn--danger-text" onClick={clearAllPicks} title="Clear all picks">
+              <TrashIcon size={17} />
             </button>
-            <button className="btn btn--ghost" onClick={() => setShowSummary(true)}>
-              Summary
+            <button className="btn btn--text" onClick={() => setShowSummary(true)} title="Summary">
+              <ChartBarIcon size={17} />
             </button>
             <button
-              className="btn btn--ghost"
+              className="btn btn--text"
+              title="Export CSV"
               onClick={() => downloadCsv(`${draft.name.replace(/\s+/g, '-')}.csv`, draftToCsv(draft))}
             >
-              Export CSV
+              <DownloadSimpleIcon size={17} />
             </button>
-            <button className="btn btn--ghost" onClick={toggleFullscreen}>
-              Fullscreen
+            <button className="btn btn--text" onClick={toggleFullscreen} title="Fullscreen">
+              <CornersOutIcon size={17} />
             </button>
+            <div className="board__divider" />
             <button className="btn btn--primary" onClick={() => setTvMode(true)}>
+              <TelevisionSimpleIcon size={17} weight="bold" />
               TV mode
             </button>
-            <button className="btn btn--ghost" onClick={() => setShowHelp(true)}>
-              ?
+            <button className="btn btn--text" onClick={() => setShowHelp(true)} title="Keyboard shortcuts">
+              <QuestionIcon size={17} />
             </button>
           </div>
         </div>
       )}
 
-      {tvMode && (
-        <div className="board__tv-bar">
-          <span className="board__tv-name">{draft.name}</span>
-          {currentPick && (
-            <span className="board__tv-onclock">
-              On the clock: Pick {currentPick.overallPick}
-            </span>
-          )}
-          <button className="btn btn--ghost" onClick={() => setTvMode(false)}>
-            Exit TV mode
-          </button>
-        </div>
-      )}
+      <OnClockBanner
+        draft={draft}
+        currentIndex={currentIndex}
+        onExitTv={tvMode ? () => setTvMode(false) : undefined}
+      />
 
       <div className="board__body">
         <div className="board__grid-wrap">
@@ -248,6 +255,7 @@ export function BoardView({ draft, players, onUpdate, onBack }: Props) {
             <ClockPanel
               clock={draft.clock}
               now={now}
+              timerSeconds={draft.settings.timerSeconds}
               isManual={draft.source === 'manual'}
               onStart={() => onUpdate({ ...draft, clock: startClock(draft.settings.timerSeconds) })}
               onPause={() => onUpdate({ ...draft, clock: pauseClock(draft.clock, now) })}

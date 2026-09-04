@@ -1,4 +1,13 @@
 import { useState } from 'react'
+import {
+  ArchiveIcon,
+  ArrowCounterClockwiseIcon,
+  CopyIcon,
+  PencilSimpleIcon,
+  PlusIcon,
+  TelevisionSimpleIcon,
+  TrashIcon,
+} from '@phosphor-icons/react'
 import type { Draft } from '../types'
 
 interface Props {
@@ -40,8 +49,14 @@ export function LibraryView({
   return (
     <div className="library">
       <header className="library__header">
-        <h1>Draft Library</h1>
-        <button className="btn btn--primary" onClick={onNew}>
+        <div className="shell-header">
+          <div>
+            <div className="shell-header__eyebrow">Draft Night</div>
+            <h1 className="shell-title">Draft library</h1>
+          </div>
+        </div>
+        <button className="btn btn--primary btn--large" onClick={onNew}>
+          <PlusIcon weight="bold" size={18} />
           New draft
         </button>
       </header>
@@ -60,7 +75,8 @@ export function LibraryView({
           Archived
         </button>
         {showArchived && visible.length > 0 && (
-          <button className="btn btn--ghost btn--danger" onClick={onDeleteAllArchived}>
+          <button className="btn btn--danger-text" onClick={onDeleteAllArchived} style={{ marginLeft: 'auto' }}>
+            <TrashIcon weight="bold" size={16} />
             Delete all archived
           </button>
         )}
@@ -69,9 +85,14 @@ export function LibraryView({
       {loading && <p className="muted">Loading drafts…</p>}
 
       {!loading && visible.length === 0 && (
-        <p className="muted">
-          {showArchived ? 'No archived drafts.' : 'No drafts yet. Create one to get started.'}
-        </p>
+        <div className="empty-state">
+          <TelevisionSimpleIcon className="empty-state__icon" size={40} weight="thin" />
+          <p className="muted">
+            {showArchived
+              ? 'No archived drafts.'
+              : 'No drafts yet. Connect a Sleeper draft or start a manual mock to get going.'}
+          </p>
+        </div>
       )}
 
       <ul className="draft-list">
@@ -98,10 +119,10 @@ export function LibraryView({
                 <div className="draft-card__title">{draft.name}</div>
               )}
               <div className="draft-card__meta">
-                <span className={`badge badge--${draft.source}`}>
+                <span className={`tag tag--${draft.source}`}>
                   {draft.source === 'sleeper' ? 'Sleeper synced' : 'Manual'}
                 </span>
-                <span className="badge">{statusLabel(draft)}</span>
+                <span className="tag">{statusLabel(draft)}</span>
                 <span className="muted">
                   {draft.settings.teamCount} teams · {draft.settings.rounds} rounds
                 </span>
@@ -109,27 +130,33 @@ export function LibraryView({
             </div>
             <div className="draft-card__actions">
               <button
-                className="btn btn--ghost"
+                className="btn btn--text"
+                title="Rename"
                 onClick={() => {
                   setRenamingId(draft.id)
                   setRenameValue(draft.name)
                 }}
               >
-                Rename
+                <PencilSimpleIcon size={17} />
               </button>
-              <button className="btn btn--ghost" onClick={() => onDuplicate(draft.id)}>
-                Duplicate
-              </button>
-              <button className="btn btn--ghost" onClick={() => onArchive(draft.id, !draft.archived)}>
-                {draft.archived ? 'Unarchive' : 'Archive'}
+              <button className="btn btn--text" title="Duplicate" onClick={() => onDuplicate(draft.id)}>
+                <CopyIcon size={17} />
               </button>
               <button
-                className="btn btn--ghost btn--danger"
+                className="btn btn--text"
+                title={draft.archived ? 'Unarchive' : 'Archive'}
+                onClick={() => onArchive(draft.id, !draft.archived)}
+              >
+                {draft.archived ? <ArrowCounterClockwiseIcon size={17} /> : <ArchiveIcon size={17} />}
+              </button>
+              <button
+                className="btn btn--danger-text"
+                title="Delete"
                 onClick={() => {
                   if (confirm(`Delete "${draft.name}" permanently?`)) onDelete(draft.id)
                 }}
               >
-                Delete
+                <TrashIcon size={17} />
               </button>
             </div>
           </li>

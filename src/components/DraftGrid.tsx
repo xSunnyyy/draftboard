@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { teamLabel } from '../lib/draftEngine'
+import { positionRgb } from '../lib/position'
 import type { Draft } from '../types'
 
 interface Props {
@@ -77,6 +78,7 @@ function RowFragment({
             key={pick.overallPick}
             ref={isCurrent ? currentCellRef : undefined}
             className={`pick-cell ${isCurrent ? 'pick-cell--current' : ''} ${isPast ? 'pick-cell--filled' : ''}`}
+            style={{ '--pc': positionRgb(pick.position) } as React.CSSProperties}
             onClick={() => isPast && onEditPick(pick.overallPick)}
           >
             <div className="pick-cell__num">{pick.overallPick}</div>
@@ -84,7 +86,8 @@ function RowFragment({
               <>
                 <div className="pick-cell__player">{pick.playerName}</div>
                 <div className="pick-cell__meta">
-                  {pick.position || ''} {pick.nflTeam ? `· ${pick.nflTeam}` : ''}
+                  {pick.position && <span className="position-chip">{pick.position}</span>}
+                  {pick.nflTeam ?? ''}
                 </div>
               </>
             ) : isCurrent ? (

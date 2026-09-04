@@ -1,3 +1,4 @@
+import { DownloadSimpleIcon } from '@phosphor-icons/react'
 import { rosterShapeByTeam } from '../lib/draftEngine'
 import type { Draft } from '../types'
 
@@ -47,6 +48,7 @@ export function SummaryPanel({ draft, onClose, onExportCsv }: Props) {
 
         <div className="modal__actions">
           <button className="btn btn--primary" onClick={onExportCsv}>
+            <DownloadSimpleIcon size={16} weight="bold" />
             Download results as CSV
           </button>
           <button className="btn btn--ghost" onClick={onClose}>
