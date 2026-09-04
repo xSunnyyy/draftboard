@@ -1129,15 +1129,28 @@ kbd {
   align-items: center;
   gap: 0.6rem;
   text-align: center;
-  padding: 3rem 4rem;
+  padding: 3.5rem 5rem;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-strong);
-  background: radial-gradient(ellipse 600px 400px at 50% 0%, rgb(226 163 61 / 0.12), transparent 70%), var(--bg-elevated);
-  box-shadow: var(--shadow-2);
+  background: radial-gradient(ellipse 700px 480px at 50% 0%, rgb(226 163 61 / 0.16), transparent 70%), var(--bg-elevated);
+  box-shadow: var(--shadow-2), 0 0 90px -20px rgb(226 163 61 / 0.35);
   cursor: default;
-  animation: modal-in 0.25s cubic-bezier(0.2, 0.8, 0.3, 1.2);
+  animation: announcement-card-in 0.45s cubic-bezier(0.16, 1.4, 0.4, 1);
   position: relative;
   overflow: hidden;
+}
+@keyframes announcement-card-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.75) translateY(20px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.03) translateY(0);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+  }
 }
 .announcement__pickno {
   font-size: 0.8rem;
@@ -1145,47 +1158,78 @@ kbd {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-faint);
+  animation: announcement-fade-up 0.4s ease both;
+}
+.announcement__avatar-wrap {
+  --pc: 168 157 141;
+  position: relative;
+  display: grid;
+  place-items: center;
+  margin: 0.4rem 0;
+  animation: announcement-pop 0.55s cubic-bezier(0.16, 1.4, 0.4, 1) 0.08s both;
+}
+.announcement__avatar-wrap::before {
+  content: '';
+  position: absolute;
+  inset: -18px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(var(--pc) / 0.4), transparent 70%);
+  filter: blur(4px);
+  animation: announcement-halo 1.8s ease-in-out infinite;
+}
+.announcement__avatar-wrap .player-avatar {
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 0 0 4px rgb(var(--pc) / 0.5), 0 12px 32px -8px rgb(0 0 0 / 0.6);
 }
 .announcement__team {
-  font-size: 1.15rem;
+  font-size: 1.2rem;
   color: var(--text-muted);
   margin-top: 0.4rem;
+  animation: announcement-fade-up 0.4s ease 0.16s both;
 }
 .announcement__player {
   font-family: var(--font-display);
-  font-size: 3.2rem;
+  font-size: clamp(2.8rem, 6vw, 5.2rem);
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.01em;
+  animation: announcement-pop 0.5s cubic-bezier(0.16, 1.4, 0.4, 1) 0.22s both;
 }
 .announcement__meta {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   color: var(--text-muted);
-  font-size: 1rem;
+  font-size: 1.05rem;
+  animation: announcement-fade-up 0.4s ease 0.3s both;
 }
 .announcement__callout {
-  margin-top: 1rem;
+  margin-top: 1.1rem;
   font-family: var(--font-display);
-  font-size: 1.3rem;
+  font-size: 1.4rem;
   font-weight: 800;
   letter-spacing: 0.02em;
-  padding: 0.5rem 1.5rem;
+  padding: 0.55rem 1.6rem;
   border-radius: 999px;
   text-transform: uppercase;
+  animation: announcement-callout-in 0.5s cubic-bezier(0.16, 1.4, 0.4, 1) 0.4s both;
 }
 .announcement__callout--hype {
   color: var(--accent-ink);
   background: var(--accent);
+  box-shadow: 0 0 32px -6px rgb(226 163 61 / 0.7);
 }
 .announcement__callout--run {
   color: #fff;
   background: linear-gradient(90deg, var(--accent), var(--danger));
+  box-shadow: 0 0 32px -6px rgb(226 84 61 / 0.6);
 }
 .announcement__callout--warning {
   color: #fff;
   background: var(--danger);
+  animation: announcement-callout-in 0.5s cubic-bezier(0.16, 1.4, 0.4, 1) 0.4s both, announcement-shake 0.5s ease 0.9s;
+  box-shadow: 0 0 32px -6px rgb(226 84 61 / 0.8);
 }
 .announcement__progress {
   position: absolute;
@@ -1193,7 +1237,7 @@ kbd {
   left: 0;
   height: 3px;
   background: var(--accent);
-  animation: announcement-progress 6s linear forwards;
+  animation: announcement-progress 4s linear forwards;
 }
 @keyframes announcement-progress {
   from {
@@ -1201,6 +1245,71 @@ kbd {
   }
   to {
     width: 0%;
+  }
+}
+@keyframes announcement-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes announcement-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes announcement-callout-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.6) translateY(8px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.1) translateY(0);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+  }
+}
+@keyframes announcement-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-4px);
+  }
+  40% {
+    transform: translateX(4px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(3px);
+  }
+}
+@keyframes announcement-halo {
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
   }
 }
 
@@ -1251,31 +1360,43 @@ kbd {
   color: var(--text-faint);
 }
 .takeover__clock {
-  width: 160px;
-  height: 160px;
+  width: 180px;
+  height: 180px;
   border-radius: 50%;
   display: grid;
   place-items: center;
   background: conic-gradient(var(--accent) calc(var(--pct, 1) * 360deg), var(--bg-inset) 0);
-  transition: background 0.3s linear;
+  box-shadow: 0 0 40px -10px rgb(226 163 61 / 0.45);
+  transition: background 0.3s linear, box-shadow 0.3s ease;
 }
 .takeover__clock--expired {
   background: conic-gradient(var(--danger) calc(var(--pct, 0) * 360deg), var(--bg-inset) 0);
+  box-shadow: 0 0 40px -8px rgb(226 84 61 / 0.6);
+  animation: takeover-clock-pulse 1s ease-in-out infinite;
 }
 .takeover__clock-inner {
-  width: 132px;
-  height: 132px;
+  width: 150px;
+  height: 150px;
   border-radius: 50%;
   background: var(--bg-elevated);
   display: grid;
   place-items: center;
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 2.2rem;
+  font-size: 2.4rem;
   font-variant-numeric: tabular-nums;
 }
 .takeover__clock--expired .takeover__clock-inner {
   color: var(--danger-strong);
+}
+@keyframes takeover-clock-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.04);
+  }
 }
 .takeover__previous {
   display: flex;
@@ -1299,6 +1420,8 @@ kbd {
   gap: 0.75rem;
   padding: 2rem;
   text-align: center;
+  position: relative;
+  background: radial-gradient(ellipse 900px 600px at 50% 45%, rgb(226 163 61 / 0.1), transparent 70%);
 }
 .takeover__live {
   display: flex;
@@ -1313,12 +1436,25 @@ kbd {
 }
 .takeover__team {
   font-family: var(--font-display);
-  font-size: 6vw;
+  font-size: 7vw;
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.01em;
   max-width: 90%;
   text-wrap: balance;
+  animation: takeover-team-in 0.55s cubic-bezier(0.16, 1.4, 0.4, 1);
+}
+@keyframes takeover-team-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(12px);
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) translateY(0);
+  }
 }
 .takeover__meta {
   color: var(--text-muted);

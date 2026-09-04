@@ -11,7 +11,7 @@ interface Props {
   onDone: () => void
 }
 
-const DISPLAY_MS = 6000
+const DISPLAY_MS = 4000
 
 export function PickAnnouncement({ draft, pick, onDone }: Props) {
   useEffect(() => {
@@ -28,7 +28,9 @@ export function PickAnnouncement({ draft, pick, onDone }: Props) {
         <div className="announcement__pickno">
           Pick {pick.overallPick} · Round {pick.round}
         </div>
-        <PlayerAvatar key={pick.playerId} playerId={pick.playerId} position={pick.position} name={pick.playerName} size={152} />
+        <div className="announcement__avatar-wrap" style={{ '--pc': positionRgb(pick.position) } as React.CSSProperties}>
+          <PlayerAvatar key={pick.playerId} playerId={pick.playerId} position={pick.position} name={pick.playerName} size={224} />
+        </div>
         <div className="announcement__team">{teamLabel(draft, pick.slot)} selects</div>
         <div className="announcement__player">{pick.playerName}</div>
         <div className="announcement__meta">

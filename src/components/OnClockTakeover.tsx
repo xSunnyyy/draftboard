@@ -76,7 +76,9 @@ export function OnClockTakeover({ draft, currentIndex, remainingSeconds, timerSe
               <span className="onclock__live-dot" />
               On the clock
             </div>
-            <div className="takeover__team">{teamLabel(draft, current.slot)}</div>
+            <div key={current.overallPick} className="takeover__team">
+              {teamLabel(draft, current.slot)}
+            </div>
             <div className="takeover__meta">
               Pick {current.overallPick} · Round {current.round}, Slot {current.pickInRound}
             </div>
