@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as sleeper from '../lib/sleeper'
 import type { TeamHistory } from '../lib/roasts'
 import type { SleeperDraftPick, SleeperPlayer } from '../types'
@@ -11,6 +11,13 @@ export type { TeamHistory } from '../lib/roasts'
  * league's `previous_league_id` chain back one season. Any failure here is
  * silently swallowed since this is flavor for commentary, not core to the
  * draft itself (a first-year league has no previous season at all).
+ *
+ * Fetches once per league. `draftOrder` and `players` come from a poller
+ * that hands back a fresh object identity on every tick even when the
+ * content is unchanged, so they're read via ref rather than depended on —
+ * otherwise this five-request chain would restart on every 3s poll, and a
+ * single failed restart (e.g. rate-limited by all that redundant traffic)
+ * would silently stomp a previously-successful result with an empty one.
  */
 export function useLeagueHistory(
   leagueId: string | null,
@@ -18,21 +25,27 @@ export function useLeagueHistory(
   players: Record<string, SleeperPlayer>,
 ): Map<number, TeamHistory> {
   const [history, setHistory] = useState<Map<number, TeamHistory>>(new Map())
+  const draftOrderRef = useRef(draftOrder)
+  draftOrderRef.current = draftOrder
+  const playersRef = useRef(players)
+  playersRef.current = players
+  const fetchedForLeagueRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (!leagueId || !draftOrder) return
+    if (fetchedForLeagueRef.current === leagueId) return
+    fetchedForLeagueRef.current = leagueId
+
     let cancelled = false
 
     async function run() {
+      const order = draftOrderRef.current!
       const map = new Map<number, TeamHistory>()
       try {
-        const [league, users] = await Promise.all([
-          sleeper.getLeague(leagueId!),
-          sleeper.getLeagueUsers(leagueId!),
-        ])
+        const [league, users] = await Promise.all([sleeper.getLeague(leagueId!), sleeper.getLeagueUsers(leagueId!)])
         const usersById = new Map(users.map((u) => [u.user_id, u]))
 
-        for (const [userId, slot] of Object.entries(draftOrder!)) {
+        for (const [userId, slot] of Object.entries(order)) {
           const user = usersById.get(userId)
           map.set(slot, {
             record: null,
@@ -59,7 +72,8 @@ export function useLeagueHistory(
             }
           }
 
-          for (const [userId, slot] of Object.entries(draftOrder!)) {
+          const players = playersRef.current
+          for (const [userId, slot] of Object.entries(order)) {
             const roster = rostersByOwner.get(userId)
             const record = roster?.settings
               ? {
@@ -89,7 +103,8 @@ export function useLeagueHistory(
           }
         }
       } catch {
-        // History is a nice-to-have; leave whatever partial map we built.
+        // History is a nice-to-have; keep whatever partial map we built
+        // (e.g. avatars resolved fine but the previous-season lookup failed).
       }
       if (!cancelled) setHistory(map)
     }
@@ -98,7 +113,7 @@ export function useLeagueHistory(
     return () => {
       cancelled = true
     }
-  }, [leagueId, draftOrder, players])
+  }, [leagueId, draftOrder])
 
   return history
 }

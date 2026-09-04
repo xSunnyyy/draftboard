@@ -1,6 +1,7 @@
 import { getPickCallout } from './callouts'
 import { teamLabel } from './draftEngine'
 import { positionSpokenName } from './position'
+import type { DraftRecapData } from './recap'
 import { getRoastLine, type TeamHistory } from './roasts'
 import type { Draft, DraftPick } from '../types'
 
@@ -103,6 +104,7 @@ export function announcePick(
   landed: DraftPick,
   next: DraftPick | null,
   history?: Map<number, TeamHistory>,
+  recap?: DraftRecapData,
 ): void {
   if (!getVoiceEnabled()) return
   cancelSpeech()
@@ -122,5 +124,15 @@ export function announcePick(
     speak(line)
   } else {
     speak('That is a wrap. The draft is complete.')
+    if (recap?.biggestSteal) {
+      speak(
+        `Biggest steal of the draft: ${teamLabel(draft, recap.biggestSteal.pick.slot)} got ${recap.biggestSteal.pick.playerName} ${recap.biggestSteal.valueDelta} picks after their ranking.`,
+      )
+    }
+    if (recap?.biggestReach) {
+      speak(
+        `And the biggest reach: ${teamLabel(draft, recap.biggestReach.pick.slot)} took ${recap.biggestReach.pick.playerName} ${Math.abs(recap.biggestReach.valueDelta)} picks earlier than expected.`,
+      )
+    }
   }
 }

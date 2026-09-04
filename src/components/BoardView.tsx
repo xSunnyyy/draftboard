@@ -10,6 +10,7 @@ import {
   SpeakerXIcon,
   TelevisionSimpleIcon,
   TrashIcon,
+  TrophyIcon,
 } from '@phosphor-icons/react'
 import { useSleeperSync } from '../hooks/useSleeperSync'
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
@@ -17,6 +18,7 @@ import { useClockTick, pauseClock, resetClock, resumeClock, secondsRemaining, st
 import { useAvailableVoices } from '../hooks/useVoices'
 import { useLeagueHistory } from '../hooks/useLeagueHistory'
 import { currentPickIndex, draftToCsv, isDraftComplete } from '../lib/draftEngine'
+import { buildDraftRecap } from '../lib/recap'
 import {
   announcePick,
   cancelSpeech,
@@ -27,6 +29,7 @@ import {
   setVoiceEnabled,
 } from '../lib/voice'
 import { DraftGrid } from './DraftGrid'
+import { DraftRecap } from './DraftRecap'
 import { OnClockBanner } from './OnClockBanner'
 import { OnClockTakeover } from './OnClockTakeover'
 import { PickAnnouncement } from './PickAnnouncement'
@@ -60,6 +63,8 @@ export function BoardView({ draft, players, onUpdate, onBack }: Props) {
   const [tvMode, setTvMode] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
   const [showSummary, setShowSummary] = useState(false)
+  const [showRecap, setShowRecap] = useState(false)
+  const recapShownRef = useRef(false)
   const [editingPick, setEditingPick] = useState<number | null>(null)
   const [followLive, setFollowLive] = useState(true)
   const [announcement, setAnnouncement] = useState<DraftPick | null>(null)
@@ -120,6 +125,16 @@ export function BoardView({ draft, players, onUpdate, onBack }: Props) {
     () => new Set(draft.picks.filter((p) => p.playerId).map((p) => p.playerId as string)),
     [draft.picks],
   )
+  const recap = useMemo(() => buildDraftRecap(draft, players), [draft, players])
+
+  // Surface the recap automatically the moment the draft wraps, without fighting a
+  // manual close afterward (only fires once per draft, on the actual transition).
+  useEffect(() => {
+    if (complete && !recapShownRef.current) {
+      recapShownRef.current = true
+      setShowRecap(true)
+    }
+  }, [complete])
 
   // Announce whichever pick most recently landed, from sync or a local manual pick.
   useEffect(() => {
@@ -136,7 +151,7 @@ export function BoardView({ draft, players, onUpdate, onBack }: Props) {
       if (landed) {
         setAnnouncement(landed)
         const nextIndex = currentPickIndex(draft.picks)
-        announcePick(draft, landed, draft.picks[nextIndex] ?? null, history)
+        announcePick(draft, landed, draft.picks[nextIndex] ?? null, history, recap)
       }
       prevPicksRef.current = draft.picks
     }
@@ -259,6 +274,7 @@ export function BoardView({ draft, players, onUpdate, onBack }: Props) {
         else if (editingPick != null) setEditingPick(null)
         else if (showHelp) setShowHelp(false)
         else if (showSummary) setShowSummary(false)
+        else if (showRecap) setShowRecap(false)
       },
       onToggleHelp: () => setShowHelp((v) => !v),
       onToggleTv: () => setTvMode((v) => !v),
@@ -317,6 +333,9 @@ export function BoardView({ draft, players, onUpdate, onBack }: Props) {
               )}
               <button className="btn btn--text" onClick={() => setShowSummary(true)} title="Summary">
                 <ChartBarIcon size={17} />
+              </button>
+              <button className="btn btn--text" onClick={() => setShowRecap(true)} title="Recap">
+                <TrophyIcon size={17} />
               </button>
               <button
                 className="btn btn--text"
@@ -430,6 +449,15 @@ export function BoardView({ draft, players, onUpdate, onBack }: Props) {
         />
       )}
       {showHelp && <ShortcutsHelp onClose={() => setShowHelp(false)} />}
+      {showRecap && (
+        <DraftRecap
+          draft={draft}
+          players={players}
+          complete={complete}
+          onClose={() => setShowRecap(false)}
+          onExportCsv={() => downloadCsv(`${draft.name.replace(/\s+/g, '-')}.csv`, draftToCsv(draft))}
+        />
+      )}
       {showSummary && (
         <SummaryPanel
           draft={draft}
