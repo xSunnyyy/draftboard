@@ -111,118 +111,122 @@ export function DraftRecap({ draft, players, complete, onClose, onExportCsv }: P
           </div>
         )}
 
-        {recap.positionalStandouts.length > 0 && (
-          <section className="recap__section">
-            <h3 className="recap__section-title">Best value by position</h3>
-            <div className="recap__chip-row">
-              {recap.positionalStandouts.map(({ position, best }) => (
-                <div key={position} className="recap__pos-chip" style={{ '--pc': positionRgb(position) } as React.CSSProperties}>
-                  <span className="position-chip" style={{ '--pc': positionRgb(position) } as React.CSSProperties}>
-                    {position}
-                  </span>
-                  <div className="recap__pos-chip-body">
-                    <div className="recap__pos-chip-player">{best.pick.playerName}</div>
-                    <div className="recap__pos-chip-meta">
-                      {teamLabel(draft, best.pick.slot)} · fell {best.valueDelta > 0 ? best.valueDelta : 0} picks
+        <div className="recap__two-col">
+          {recap.positionalStandouts.length > 0 && (
+            <section className="recap__section">
+              <h3 className="recap__section-title">Best value by position</h3>
+              <div className="recap__chip-row">
+                {recap.positionalStandouts.map(({ position, best }) => (
+                  <div key={position} className="recap__pos-chip" style={{ '--pc': positionRgb(position) } as React.CSSProperties}>
+                    <span className="position-chip" style={{ '--pc': positionRgb(position) } as React.CSSProperties}>
+                      {position}
+                    </span>
+                    <div className="recap__pos-chip-body">
+                      <div className="recap__pos-chip-player">{best.pick.playerName}</div>
+                      <div className="recap__pos-chip-meta">
+                        {teamLabel(draft, best.pick.slot)} · fell {best.valueDelta > 0 ? best.valueDelta : 0} picks
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
+                ))}
+              </div>
+            </section>
+          )}
 
-        {recap.firstByPosition.length > 0 && (
-          <section className="recap__section">
-            <h3 className="recap__section-title">First off the board</h3>
-            <div className="recap__chip-row">
-              {recap.firstByPosition.map(({ position, pick }) => (
-                <div key={position} className="recap__pos-chip" style={{ '--pc': positionRgb(position) } as React.CSSProperties}>
-                  <span className="position-chip" style={{ '--pc': positionRgb(position) } as React.CSSProperties}>
-                    {position}
-                  </span>
-                  <div className="recap__pos-chip-body">
-                    <div className="recap__pos-chip-player">{pick.playerName}</div>
-                    <div className="recap__pos-chip-meta">
-                      Pick {pick.overallPick} · {teamLabel(draft, pick.slot)}
+          {recap.firstByPosition.length > 0 && (
+            <section className="recap__section">
+              <h3 className="recap__section-title">First off the board</h3>
+              <div className="recap__chip-row">
+                {recap.firstByPosition.map(({ position, pick }) => (
+                  <div key={position} className="recap__pos-chip" style={{ '--pc': positionRgb(position) } as React.CSSProperties}>
+                    <span className="position-chip" style={{ '--pc': positionRgb(position) } as React.CSSProperties}>
+                      {position}
+                    </span>
+                    <div className="recap__pos-chip-body">
+                      <div className="recap__pos-chip-player">{pick.playerName}</div>
+                      <div className="recap__pos-chip-meta">
+                        Pick {pick.overallPick} · {teamLabel(draft, pick.slot)}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
 
-        {recap.teamReports.length > 0 && (
-          <section className="recap__section">
-            <h3 className="recap__section-title">Draft grades</h3>
-            <p className="muted recap__section-hint">How each team's picks compared to expected value.</p>
-            <div className="table-scroll">
-              <table className="summary-table">
-                <thead>
-                  <tr>
-                    <th>Team</th>
-                    <th>Grade</th>
-                    <th>Avg value</th>
-                    <th>Best pick</th>
-                    <th>Worst pick</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...recap.teamReports]
-                    .sort((a, b) => b.avgValue - a.avgValue)
-                    .map((team) => (
+        <div className="recap__two-col">
+          {recap.teamReports.length > 0 && (
+            <section className="recap__section">
+              <h3 className="recap__section-title">Draft grades</h3>
+              <p className="muted recap__section-hint">How each team's picks compared to expected value.</p>
+              <div className="table-scroll">
+                <table className="summary-table">
+                  <thead>
+                    <tr>
+                      <th>Team</th>
+                      <th>Grade</th>
+                      <th>Avg value</th>
+                      <th>Best pick</th>
+                      <th>Worst pick</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...recap.teamReports]
+                      .sort((a, b) => b.avgValue - a.avgValue)
+                      .map((team) => (
+                        <tr key={team.slot}>
+                          <td>{team.teamName}</td>
+                          <td>
+                            <span className={`recap__grade recap__grade--${team.grade[0].toLowerCase()}`}>{team.grade}</span>
+                          </td>
+                          <td>
+                            {team.avgValue > 0 ? '+' : ''}
+                            {team.avgValue.toFixed(1)}
+                          </td>
+                          <td>{team.best ? `${team.best.pick.playerName} (${team.best.valueDelta > 0 ? '+' : ''}${team.best.valueDelta})` : '—'}</td>
+                          <td>{team.worst ? `${team.worst.pick.playerName} (${team.worst.valueDelta > 0 ? '+' : ''}${team.worst.valueDelta})` : '—'}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
+
+          {recap.powerRankings.length > 0 && (
+            <section className="recap__section">
+              <h3 className="recap__section-title">Way-too-early power rankings</h3>
+              <p className="muted recap__section-hint">
+                A projected finish order from estimated starting-lineup strength — just for fun, not a real forecast.
+              </p>
+              <div className="table-scroll">
+                <table className="summary-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Team</th>
+                      <th>Power score</th>
+                      <th>Outlook</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recap.powerRankings.map((team) => (
                       <tr key={team.slot}>
+                        <td>{team.rank}</td>
                         <td>{team.teamName}</td>
+                        <td>{team.powerScore}</td>
                         <td>
-                          <span className={`recap__grade recap__grade--${team.grade[0].toLowerCase()}`}>{team.grade}</span>
+                          <span className={`tag recap__tier recap__tier--${team.tier.split(' ')[0].toLowerCase()}`}>{team.tier}</span>
                         </td>
-                        <td>
-                          {team.avgValue > 0 ? '+' : ''}
-                          {team.avgValue.toFixed(1)}
-                        </td>
-                        <td>{team.best ? `${team.best.pick.playerName} (${team.best.valueDelta > 0 ? '+' : ''}${team.best.valueDelta})` : '—'}</td>
-                        <td>{team.worst ? `${team.worst.pick.playerName} (${team.worst.valueDelta > 0 ? '+' : ''}${team.worst.valueDelta})` : '—'}</td>
                       </tr>
                     ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        )}
-
-        {recap.powerRankings.length > 0 && (
-          <section className="recap__section">
-            <h3 className="recap__section-title">Way-too-early power rankings</h3>
-            <p className="muted recap__section-hint">
-              A projected finish order from estimated starting-lineup strength — just for fun, not a real forecast.
-            </p>
-            <div className="table-scroll">
-              <table className="summary-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Team</th>
-                    <th>Power score</th>
-                    <th>Outlook</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recap.powerRankings.map((team) => (
-                    <tr key={team.slot}>
-                      <td>{team.rank}</td>
-                      <td>{team.teamName}</td>
-                      <td>{team.powerScore}</td>
-                      <td>
-                        <span className={`tag recap__tier recap__tier--${team.tier.split(' ')[0].toLowerCase()}`}>{team.tier}</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        )}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
+        </div>
 
         <div className="modal__actions">
           <button className="btn btn--primary" onClick={onExportCsv}>
