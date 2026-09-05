@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeftIcon, SpeakerHighIcon, SpeakerXIcon } from '@phosphor-icons/react'
 import { useSleeperSync } from '../hooks/useSleeperSync'
 import { useLeagueHistory } from '../hooks/useLeagueHistory'
+import { useSleeperTeamNames } from '../hooks/useSleeperTeamNames'
 import { useAvailableVoices } from '../hooks/useVoices'
 import { buildEmptyPicks, currentPickIndex, teamLabel } from '../lib/draftEngine'
 import { newId } from '../lib/id'
@@ -124,6 +125,17 @@ export function VoiceCompanion({ companionId, players, onExit }: Props) {
 
   const history = useLeagueHistory(draft?.sleeperLeagueId ?? null, sync.draftOrder, players)
   const recap = useMemo(() => (draft ? buildDraftRecap(draft, players) : null), [draft, players])
+
+  // Same top-up as the main board: draft_order (and therefore real team names) is
+  // often not available yet at connect time, so correct the announced names once
+  // Sleeper actually reports it.
+  const resolvedTeamNames = useSleeperTeamNames(draft?.sleeperLeagueId ?? null, sync.draftOrder, draft?.settings.teamCount ?? 0)
+  useEffect(() => {
+    if (!resolvedTeamNames || !draft) return
+    const changed = resolvedTeamNames.some((name, i) => name !== draft.settings.teamNames[i])
+    if (changed) setDraft((d) => (d ? { ...d, settings: { ...d.settings, teamNames: resolvedTeamNames } } : d))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resolvedTeamNames])
 
   useEffect(() => {
     if (!draft) return

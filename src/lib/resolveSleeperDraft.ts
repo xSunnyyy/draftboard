@@ -1,11 +1,26 @@
 import * as sleeper from './sleeper'
-import type { DraftSettings } from '../types'
+import type { DraftSettings, SleeperUser } from '../types'
 
 export interface ResolvedSleeperDraft {
   draftId: string
   leagueId: string | null
   name: string
   settings: DraftSettings
+}
+
+/** Maps a Sleeper draft's user-keyed `draft_order` to team names by slot, falling
+ *  back to a generic "Team N" for any slot without a resolvable owner. */
+export function teamNamesFromDraftOrder(
+  order: Record<string, number>,
+  users: SleeperUser[],
+  teamCount: number,
+): string[] {
+  const bySlot = new Map<number, string>()
+  for (const [userId, slot] of Object.entries(order)) {
+    const user = users.find((u) => u.user_id === userId)
+    bySlot.set(slot, user?.metadata?.team_name || user?.display_name || `Team ${slot}`)
+  }
+  return Array.from({ length: teamCount }, (_, i) => bySlot.get(i + 1) || `Team ${i + 1}`)
 }
 
 /**
@@ -42,14 +57,11 @@ export async function resolveSleeperDraft(input: string, base: DraftSettings): P
     try {
       const users = await sleeper.getLeagueUsers(leagueId)
       const order = draft.draft_order
-      if (order) {
-        const bySlot = new Map<number, string>()
-        for (const [userId, slot] of Object.entries(order)) {
-          const user = users.find((u) => u.user_id === userId)
-          bySlot.set(slot, user?.metadata?.team_name || user?.display_name || `Team ${slot}`)
-        }
-        teamNames = Array.from({ length: draft.settings.teams }, (_, i) => bySlot.get(i + 1) || `Team ${i + 1}`)
-      }
+      // Sleeper often hasn't assigned draft_order yet at connect time (it's commonly
+      // randomized right as the draft goes live) — when that's the case this falls
+      // back to generic names for now; useSleeperTeamNames re-resolves them later
+      // once the live draft actually reports an order.
+      if (order) teamNames = teamNamesFromDraftOrder(order, users, draft.settings.teams)
     } catch {
       // Team names are a nice-to-have; keep defaults if this fails.
     }
