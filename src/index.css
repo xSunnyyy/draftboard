@@ -1830,7 +1830,30 @@ kbd {
   border-color: rgb(226 84 61 / 0.4);
 }
 .modal--recap {
-  width: 860px;
+  /* Wide and short rather than tall and narrow — this is meant to stay up on a TV,
+     where the screen is wider than it is tall and scrolling with a remote is painful. */
+  width: min(1360px, 94vw);
+  max-height: 90vh;
+}
+.recap__two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
+  margin: 1.5rem 0;
+}
+.recap__two-col .recap__section {
+  margin: 0;
+}
+.recap .summary-table th,
+.recap .summary-table td {
+  padding: 0.4rem 0.6rem;
+  font-size: 0.82rem;
+}
+@media (max-width: 760px) {
+  .recap__two-col {
+    grid-template-columns: 1fr;
+  }
 }
 .recap__award--slow {
   border-color: rgb(156 145 127 / 0.4);
