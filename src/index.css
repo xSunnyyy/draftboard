@@ -966,6 +966,47 @@ h3 {
   flex-wrap: wrap;
 }
 
+.clock-bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.6rem 1.25rem;
+  border-top: 1px solid var(--border);
+  background: var(--bg-elevated);
+}
+.clock-bar__time {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.1rem;
+  font-variant-numeric: tabular-nums;
+  flex: none;
+  width: 3.2rem;
+}
+.clock-bar--expired .clock-bar__time {
+  color: var(--danger-strong);
+}
+.clock-bar__track {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--bg-inset);
+  overflow: hidden;
+}
+.clock-bar__fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 1s linear;
+}
+.clock-bar--expired .clock-bar__fill {
+  background: var(--danger);
+}
+.clock-bar__label {
+  flex: none;
+  font-size: 0.78rem;
+  color: var(--text-faint);
+}
+
 /* Modals */
 .modal-overlay {
   position: fixed;

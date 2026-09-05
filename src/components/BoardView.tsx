@@ -30,6 +30,7 @@ import {
   setPreferredVoiceUri,
   setVoiceEnabled,
 } from '../lib/voice'
+import { BoardClockBar } from './BoardClockBar'
 import { DraftGrid } from './DraftGrid'
 import { DraftRecap } from './DraftRecap'
 import { OnClockBanner } from './OnClockBanner'
@@ -447,21 +448,21 @@ export function BoardView({ draft, players, onUpdate, onBack }: Props) {
               </div>
             </div>
 
-            <aside className="board__side">
-              <ClockPanel
-                remainingSeconds={remainingSeconds}
-                timerSeconds={draft.settings.timerSeconds}
-                clockStatus={draft.clock.status}
-                isManual={!isSleeper}
-                onStart={() => onUpdate({ ...draft, clock: startClock(draft.settings.timerSeconds) })}
-                onPause={() => onUpdate({ ...draft, clock: pauseClock(draft.clock, now) })}
-                onResume={() => onUpdate({ ...draft, clock: resumeClock(draft.clock) })}
-                onReset={() => onUpdate({ ...draft, clock: resetClock(draft.settings.timerSeconds) })}
-              />
-              {/* A Sleeper-synced board is read-only — there's nothing to draft here,
-                  so a searchable "available players" list has no purpose and only
-                  invites confusion about whether picks can be made from it. */}
-              {!isSleeper && (
+            {/* A Sleeper-synced board is read-only and has nothing to draft from, so it
+                skips the side column entirely — the grid gets the full width and the
+                countdown moves to the footer bar below instead. */}
+            {!isSleeper && (
+              <aside className="board__side">
+                <ClockPanel
+                  remainingSeconds={remainingSeconds}
+                  timerSeconds={draft.settings.timerSeconds}
+                  clockStatus={draft.clock.status}
+                  isManual
+                  onStart={() => onUpdate({ ...draft, clock: startClock(draft.settings.timerSeconds) })}
+                  onPause={() => onUpdate({ ...draft, clock: pauseClock(draft.clock, now) })}
+                  onResume={() => onUpdate({ ...draft, clock: resumeClock(draft.clock) })}
+                  onReset={() => onUpdate({ ...draft, clock: resetClock(draft.settings.timerSeconds) })}
+                />
                 <PlayerPool
                   ref={searchRef}
                   players={players}
@@ -469,19 +470,23 @@ export function BoardView({ draft, players, onUpdate, onBack }: Props) {
                   onDraft={draftPlayer}
                   canDraft={editingAllowed && !!currentPick && !currentPick.playerId}
                 />
-              )}
-              {complete && !isSleeper && (
-                <label className="pool__available-toggle">
-                  <input
-                    type="checkbox"
-                    checked={draft.allowEditsWhenComplete}
-                    onChange={(e) => onUpdate({ ...draft, allowEditsWhenComplete: e.target.checked })}
-                  />
-                  Allow edits to this completed draft
-                </label>
-              )}
-            </aside>
+                {complete && (
+                  <label className="pool__available-toggle">
+                    <input
+                      type="checkbox"
+                      checked={draft.allowEditsWhenComplete}
+                      onChange={(e) => onUpdate({ ...draft, allowEditsWhenComplete: e.target.checked })}
+                    />
+                    Allow edits to this completed draft
+                  </label>
+                )}
+              </aside>
+            )}
           </div>
+
+          {isSleeper && (
+            <BoardClockBar remainingSeconds={remainingSeconds} timerSeconds={draft.settings.timerSeconds} />
+          )}
         </>
       )}
 
