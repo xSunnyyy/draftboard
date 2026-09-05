@@ -51,14 +51,14 @@ export function OnClockTakeover({
       <div className="takeover__controls">
         {voiceSupported && (
           <button
-            className="btn btn--ghost btn--icon takeover__exit"
+            className="btn btn--ghost btn--icon takeover__control-btn"
             onClick={onToggleVoice}
             title={voiceEnabled ? 'Mute voice announcements' : 'Enable voice announcements'}
           >
             {voiceEnabled ? <SpeakerHighIcon size={18} /> : <SpeakerXIcon size={18} />}
           </button>
         )}
-        <button className="btn btn--ghost btn--icon takeover__exit" onClick={onExit} title="Exit TV mode">
+        <button className="btn btn--ghost btn--icon takeover__control-btn takeover__exit" onClick={onExit} title="Exit TV mode">
           <XIcon size={18} weight="bold" />
         </button>
       </div>

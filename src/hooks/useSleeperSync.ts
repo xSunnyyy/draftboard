@@ -13,7 +13,9 @@ export interface SleeperSyncState {
   draftOrder: Record<string, number> | null
 }
 
-const POLL_MS = 3000
+// Safe to poll aggressively now that an unchanged poll is a no-op (no re-render,
+// no storage write) — see the `changed` guard below.
+const POLL_MS = 1000
 
 /** Polls a Sleeper draft and reconciles picks into the local draft record. */
 export function useSleeperSync(

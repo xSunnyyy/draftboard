@@ -5,6 +5,7 @@ import {
   ChartBarIcon,
   CornersOutIcon,
   DownloadSimpleIcon,
+  LinkIcon,
   QuestionIcon,
   SpeakerHighIcon,
   SpeakerXIcon,
@@ -71,6 +72,7 @@ export function BoardView({ draft, players, onUpdate, onBack }: Props) {
   const [pickStartedAt, setPickStartedAt] = useState(() => Date.now())
   const [voiceEnabled, setVoiceEnabledState] = useState(() => getVoiceEnabled())
   const [voiceUri, setVoiceUri] = useState('')
+  const [companionLinkCopied, setCompanionLinkCopied] = useState(false)
   const availableVoices = useAvailableVoices()
   const prevPicksRef = useRef(draft.picks)
   const searchRef = useRef<HTMLInputElement>(null)
@@ -258,6 +260,19 @@ export function BoardView({ draft, players, onUpdate, onBack }: Props) {
     setVoiceUri(uri)
   }
 
+  function copyCompanionLink() {
+    const url = new URL(window.location.href)
+    url.search = ''
+    url.searchParams.set('companion', draft.sleeperDraftId!)
+    navigator.clipboard
+      .writeText(url.toString())
+      .then(() => {
+        setCompanionLinkCopied(true)
+        setTimeout(() => setCompanionLinkCopied(false), 2000)
+      })
+      .catch(() => {})
+  }
+
   function toggleFullscreen() {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(() => {})
@@ -369,6 +384,16 @@ export function BoardView({ draft, players, onUpdate, onBack }: Props) {
                     </option>
                   ))}
                 </select>
+              )}
+              {isSleeper && (
+                <button
+                  className="btn btn--text"
+                  onClick={copyCompanionLink}
+                  title="Copy a link that speaks pick announcements from another device — for when the TV can't"
+                >
+                  <LinkIcon size={17} />
+                  {companionLinkCopied ? 'Link copied' : 'Voice companion link'}
+                </button>
               )}
               <div className="board__divider" />
               <button className="btn btn--primary" onClick={() => setTvMode(true)}>
