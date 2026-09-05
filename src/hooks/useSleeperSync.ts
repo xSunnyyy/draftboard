@@ -48,23 +48,30 @@ export function useSleeperSync(
         const bySlot = new Map<number, (typeof sleeperPicks)[number]>()
         for (const p of sleeperPicks) bySlot.set(p.pick_no, p)
 
+        // Most polls see no actual change on Sleeper — only build a new pick object
+        // (and only stamp a fresh pickedAt) when something really did change, so an
+        // unchanged poll doesn't cascade into a re-render + IndexedDB write.
+        let changed = false
         const merged = draft!.picks.map((pick) => {
-          const remote = bySlot.get(pick.overallPick)
-          if (!remote) return pick.isManualEdit ? pick : { ...pick, playerId: null, playerName: null, position: null, nflTeam: null, pickedAt: null }
           if (pick.isManualEdit) return pick
+          const remote = bySlot.get(pick.overallPick)
+          if (!remote) {
+            if (pick.playerId === null) return pick
+            changed = true
+            return { ...pick, playerId: null, playerName: null, position: null, nflTeam: null, pickedAt: null }
+          }
           const meta = remote.metadata
           const name = meta?.first_name || meta?.last_name ? `${meta?.first_name ?? ''} ${meta?.last_name ?? ''}`.trim() : remote.player_id
-          return {
-            ...pick,
-            playerId: remote.player_id,
-            playerName: name,
-            position: meta?.position ?? null,
-            nflTeam: meta?.team ?? null,
-            pickedAt: Date.now(),
+          const position = meta?.position ?? null
+          const nflTeam = meta?.team ?? null
+          if (pick.playerId === remote.player_id && pick.playerName === name && pick.position === position && pick.nflTeam === nflTeam) {
+            return pick
           }
+          changed = true
+          return { ...pick, playerId: remote.player_id, playerName: name, position, nflTeam, pickedAt: Date.now() }
         })
 
-        onPicksUpdateRef.current(merged)
+        if (changed) onPicksUpdateRef.current(merged)
 
         const lastPick = sleeperPicks.length > 0 ? sleeperPicks[sleeperPicks.length - 1] : null
         setState({
