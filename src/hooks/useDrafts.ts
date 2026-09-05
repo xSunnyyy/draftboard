@@ -54,12 +54,17 @@ export function useDrafts() {
     [reload],
   )
 
-  const update = useCallback(async (draft: Draft) => {
+  const update = useCallback((draft: Draft) => {
     const next = { ...draft, updatedAt: Date.now() }
-    await db.saveDraft(next)
+    // Update the visible state immediately; persistence happens in the background
+    // so a slow disk write never delays what's on screen (this matters a lot for a
+    // live draft board polling every few seconds).
     setDrafts((prev) => {
       const others = prev.filter((d) => d.id !== next.id)
       return [next, ...others].sort((a, b) => b.updatedAt - a.updatedAt)
+    })
+    void db.saveDraft(next).catch((err) => {
+      console.error('Failed to persist draft:', err)
     })
     return next
   }, [])
