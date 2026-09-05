@@ -13,8 +13,9 @@ export interface SleeperSyncState {
   draftOrder: Record<string, number> | null
 }
 
-// Safe to poll aggressively now that an unchanged poll is a no-op (no re-render,
-// no storage write) — see the `changed` guard below.
+// An unchanged poll is a no-op (no re-render, no storage write — see the `changed`
+// guard below), and sleeper.ts's getDraft/getDraftPicks bypass Sleeper's CDN cache, so
+// there's no server-side staleness floor left to poll faster than.
 const POLL_MS = 1000
 
 /** Polls a Sleeper draft and reconciles picks into the local draft record. */

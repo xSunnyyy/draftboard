@@ -16,10 +16,10 @@ export class SleeperError extends Error {
   }
 }
 
-async function getJson<T>(path: string): Promise<T> {
+async function getJson<T>(path: string, init?: RequestInit): Promise<T> {
   let res: Response
   try {
-    res = await fetch(`${BASE}${path}`)
+    res = await fetch(`${BASE}${path}`, init)
   } catch {
     throw new SleeperError('Could not reach Sleeper. Check your connection.')
   }
@@ -30,6 +30,20 @@ async function getJson<T>(path: string): Promise<T> {
     throw new SleeperError(`Sleeper request failed (${res.status}).`)
   }
   return (await res.json()) as T
+}
+
+/** Sleeper's draft/picks endpoints sit behind a CDN that caches responses for up to a
+ *  minute (`s-maxage=60, stale-while-revalidate=180`), which a live draft can easily
+ *  outrun — bots in a mock draft can land several picks inside that single cache
+ *  window. A changing query param defeats the CDN's URL-keyed cache, and `no-store`
+ *  stops the browser's own HTTP cache from serving a stale copy on top of that, so the
+ *  two endpoints this app polls get the true current state on every request instead of
+ *  whatever Sleeper's edge last cached. Only used for the polled endpoints — every
+ *  other call here is infrequent enough that Sleeper's cache is a fine, more
+ *  considerate default. */
+function getFreshJson<T>(path: string): Promise<T> {
+  const bust = path.includes('?') ? `&_=${Date.now()}` : `?_=${Date.now()}`
+  return getJson<T>(`${path}${bust}`, { cache: 'no-store' })
 }
 
 export function getLeague(leagueId: string): Promise<SleeperLeague> {
@@ -49,11 +63,11 @@ export function getLeagueRosters(leagueId: string): Promise<SleeperRoster[]> {
 }
 
 export function getDraft(draftId: string): Promise<SleeperDraft> {
-  return getJson<SleeperDraft>(`/draft/${draftId}`)
+  return getFreshJson<SleeperDraft>(`/draft/${draftId}`)
 }
 
 export function getDraftPicks(draftId: string): Promise<SleeperDraftPick[]> {
-  return getJson<SleeperDraftPick[]>(`/draft/${draftId}/picks`)
+  return getFreshJson<SleeperDraftPick[]>(`/draft/${draftId}/picks`)
 }
 
 export async function getAllPlayers(): Promise<Record<string, SleeperPlayer>> {
