@@ -105,32 +105,38 @@ export function announcePick(
   next: DraftPick | null,
   history?: Map<number, TeamHistory>,
   recap?: DraftRecapData,
+  onLine?: (line: string) => void,
 ): void {
   if (!getVoiceEnabled()) return
   cancelSpeech()
 
+  const say = (line: string) => {
+    onLine?.(line)
+    speak(line)
+  }
+
   const pickLine = `${teamLabel(draft, landed.slot)} selects ${landed.playerName}${
     landed.position ? `, ${positionSpokenName(landed.position)}` : ''
   }.`
-  speak(pickLine)
+  say(pickLine)
 
   const callout = getPickCallout(draft, landed)
-  if (callout) speak(speakable(callout.label))
+  if (callout) say(speakable(callout.label))
 
   if (next) {
     let line = `${teamLabel(draft, next.slot)}, you are now on the clock.`
     const roast = getRoastLine(teamLabel(draft, next.slot), history?.get(next.slot), next.overallPick)
     if (roast) line += ` ${roast}`
-    speak(line)
+    say(line)
   } else {
-    speak('That is a wrap. The draft is complete.')
+    say('That is a wrap. The draft is complete.')
     if (recap?.biggestSteal) {
-      speak(
+      say(
         `Biggest steal of the draft: ${teamLabel(draft, recap.biggestSteal.pick.slot)} got ${recap.biggestSteal.pick.playerName} ${recap.biggestSteal.valueDelta} picks after their ranking.`,
       )
     }
     if (recap?.biggestReach) {
-      speak(
+      say(
         `And the biggest reach: ${teamLabel(draft, recap.biggestReach.pick.slot)} took ${recap.biggestReach.pick.playerName} ${Math.abs(recap.biggestReach.valueDelta)} picks earlier than expected.`,
       )
     }
