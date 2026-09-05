@@ -18,6 +18,7 @@ import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
 import { useClockTick, pauseClock, resetClock, resumeClock, secondsRemaining, startClock } from '../hooks/useDraftClock'
 import { useAvailableVoices } from '../hooks/useVoices'
 import { useLeagueHistory } from '../hooks/useLeagueHistory'
+import { useSleeperTeamNames } from '../hooks/useSleeperTeamNames'
 import { currentPickIndex, draftToCsv, isDraftComplete } from '../lib/draftEngine'
 import { buildDraftRecap } from '../lib/recap'
 import {
@@ -118,6 +119,22 @@ export function BoardView({ draft, players, onUpdate, onBack }: Props) {
   const showWaitingScreen = isSleeper && sync.draftStatus === 'pre_draft'
 
   const history = useLeagueHistory(isSleeper ? draft.sleeperLeagueId : null, sync.draftOrder, players)
+
+  // Sleeper often hasn't assigned draft_order at the moment a draft is connected to
+  // (it's commonly randomized right as the draft goes live), so the initial team-name
+  // resolve can be stuck on generic "Team N" placeholders — correct them once real
+  // names become resolvable, persisting the fix so it sticks for the rest of the draft.
+  const resolvedTeamNames = useSleeperTeamNames(
+    isSleeper ? draft.sleeperLeagueId : null,
+    sync.draftOrder,
+    draft.settings.teamCount,
+  )
+  useEffect(() => {
+    if (!resolvedTeamNames) return
+    const changed = resolvedTeamNames.some((name, i) => name !== draft.settings.teamNames[i])
+    if (changed) onUpdate({ ...draft, settings: { ...draft.settings, teamNames: resolvedTeamNames } })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resolvedTeamNames])
 
   const currentIndex = currentPickIndex(draft.picks)
   const currentPick = draft.picks[currentIndex]
@@ -441,13 +458,18 @@ export function BoardView({ draft, players, onUpdate, onBack }: Props) {
                 onResume={() => onUpdate({ ...draft, clock: resumeClock(draft.clock) })}
                 onReset={() => onUpdate({ ...draft, clock: resetClock(draft.settings.timerSeconds) })}
               />
-              <PlayerPool
-                ref={searchRef}
-                players={players}
-                draftedIds={draftedIds}
-                onDraft={draftPlayer}
-                canDraft={editingAllowed && !!currentPick && !currentPick.playerId}
-              />
+              {/* A Sleeper-synced board is read-only — there's nothing to draft here,
+                  so a searchable "available players" list has no purpose and only
+                  invites confusion about whether picks can be made from it. */}
+              {!isSleeper && (
+                <PlayerPool
+                  ref={searchRef}
+                  players={players}
+                  draftedIds={draftedIds}
+                  onDraft={draftPlayer}
+                  canDraft={editingAllowed && !!currentPick && !currentPick.playerId}
+                />
+              )}
               {complete && !isSleeper && (
                 <label className="pool__available-toggle">
                   <input

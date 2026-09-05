@@ -69,12 +69,17 @@ function RowFragment({
   currentCellRef: React.MutableRefObject<HTMLDivElement | null>
   editable: boolean
 }) {
-  const rowPicks = draft.picks.filter((p) => p.round === round)
+  // Column position must follow the team's slot, not the order picks landed in this
+  // round — on a snake draft's reversed (even) rounds those are different things, and
+  // rendering by array position instead of slot put picks under the wrong team header.
+  const bySlot = new Map(draft.picks.filter((p) => p.round === round).map((p) => [p.slot, p]))
   return (
     <>
       <div className="grid__round-label">R{round}</div>
-      {rowPicks.map((pick, i) => {
-        const globalIndex = (round - 1) * teamCount + i
+      {Array.from({ length: teamCount }, (_, i) => i + 1).map((slot) => {
+        const pick = bySlot.get(slot)
+        if (!pick) return <div key={`empty-${round}-${slot}`} className="pick-cell" />
+        const globalIndex = pick.overallPick - 1
         const isCurrent = globalIndex === currentIndex
         const isPast = pick.playerId !== null
         return (
